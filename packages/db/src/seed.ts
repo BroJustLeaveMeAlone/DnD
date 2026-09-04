@@ -54,10 +54,23 @@ export async function seedSystemModule(
       visibility: 'public',
       license: 'CC-BY-4.0',
       dials: sql`'{}'::jsonb`,
+      definition: {
+        attributes: module.attributes,
+        derived: module.derived,
+        source: module.source,
+      },
     })
     .onConflictDoUpdate({
       target: systems.slug,
-      set: { name: module.name, updatedAt: new Date() },
+      set: {
+        name: module.name,
+        definition: {
+          attributes: module.attributes,
+          derived: module.derived,
+          source: module.source,
+        },
+        updatedAt: new Date(),
+      },
     })
     .returning({ id: systems.id });
 

@@ -64,6 +64,16 @@ export const systems = pgTable(
       .notNull()
       .default(sql`'{}'::jsonb`),
 
+    /**
+     * The non-entity half of a SystemModule: attribute definitions, derived
+     * stat definitions, and the proficiency scale. Entities live in their own
+     * table because they are browsed and queried; these are read only as a
+     * whole, when loading the system to resolve a character.
+     */
+    definition: jsonb('definition')
+      .notNull()
+      .default(sql`'{}'::jsonb`),
+
     visibility: visibilityEnum('visibility').notNull().default('private'),
     license: contentLicenseEnum('license').notNull().default('all-rights-reserved'),
     version: integer('version').notNull().default(0),

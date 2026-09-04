@@ -9,15 +9,15 @@ Design intent and full scope live in [PLAN.md](./PLAN.md) — this file tracks e
 
 ## Current Status
 
-|                  |                                                                                                                                                      |
-| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Active arc**   | Arc 2 — The 5e Product                                                                                                                               |
-| **Active phase** | Phase 3 — Compendium                                                                                                                                 |
-| **Status**       | Complete                                                                                                                                             |
-| **Summary**      | Content seeded into Postgres, browse/search/facets, entity pages, structured effect queries. **191 tests**. First real UI; all routes verified live. |
-| **Caveats**      | Vertical slice content only. OAuth sign-in round-trip still untested (no provider credentials).                                                      |
-| **Repo**         | https://github.com/BroJustLeaveMeAlone/DnD                                                                                                           |
-| **Next up**      | Phase 4 — Character builder + sheet (the largest single phase)                                                                                       |
+|                  |                                                                                                                                                   |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Active arc**   | Arc 2 — The 5e Product                                                                                                                            |
+| **Active phase** | Phase 4 — Character builder + sheet                                                                                                               |
+| **Status**       | Complete                                                                                                                                          |
+| **Summary**      | Characters build from **database** content, not the TS modules. Sheet renders every stat with its provenance trace. **208 tests**. Verified live. |
+| **Caveats**      | Vertical slice content only. Dev-only sign-in in place; OAuth round-trip still untested (no provider credentials).                                |
+| **Repo**         | https://github.com/BroJustLeaveMeAlone/DnD                                                                                                        |
+| **Next up**      | Phase 5 — Homebrew authoring (entity editors, effect builder, formula editor)                                                                     |
 
 ---
 
@@ -38,7 +38,7 @@ Statuses: `Not started` · `In progress` · `Complete` · `Blocked`
 | #   | Phase                     | Status       | Notes                                                                    |
 | --- | ------------------------- | ------------ | ------------------------------------------------------------------------ |
 | 3   | Compendium                | **Complete** | Browse, search, facets, entity pages, structured effect queries          |
-| 4   | Character builder + sheet | Not started  | Largest single phase                                                     |
+| 4   | Character builder + sheet | **Complete** | Builds from DB content. Provenance on every stat                         |
 | 5   | Homebrew authoring        | Not started  | Entity editors, effect builder, formula editor, character-scoped content |
 
 > **Stopping after Arc 2 still ships a genuinely valuable free 5e character builder.**
@@ -238,6 +238,48 @@ Mail, Mage Armor, Shield, and the Defense fighting style purely by structural ef
   fine at 50 entities, not fine at 50,000.
 - Effect descriptions rendered "sets ac by 16"; each operation now reads correctly in English.
 - `aria-current="true"` on facet links corrected to `aria-current="page"`.
+
+---
+
+## Phase 4 — Character Builder + Sheet (Complete)
+
+**Goal:** characters that build from database content and a sheet that shows its own reasoning.
+
+### Delivered
+
+- [x] `systems.definition` column — attributes, derived stats, source. The non-entity half of a
+      SystemModule, so a system can be reconstructed entirely from the database.
+- [x] `loadSystemModule(db, slug)` — DB rows → `SystemModule`, deserialising grants
+- [x] Character CRUD with **ownership enforced in the WHERE clause**, not a prior read
+- [x] `/characters`, `/characters/new` (options scoped to the chosen ruleset), `/characters/[id]`
+- [x] `StatValue` — provenance via `<details>`/`<summary>`, so it works with no JS, is
+      keyboard-navigable and screen-reader-announced, and survives the Phase 13 offline work
+- [x] Equip / attune toggles that recompute the sheet
+- [x] Development-only sign-in (see CREDENTIALS.md) — without it no authenticated page was
+      reachable, since no OAuth app is registered
+- [x] `characterBuild` Zod schema validating untrusted build JSON
+
+### The load-bearing test
+
+**A DB-loaded module must produce a byte-identical sheet to the TypeScript module.** If
+serialisation loses a formula, a predicate, or a level gate, every user's sheet is silently wrong.
+Asserted for both editions, plus explicit coverage that conditional predicates and level gates
+survive the round-trip.
+
+### Verified live
+
+Signed in, created a level 5 Champion fighter, and confirmed against a booted production server:
+AC 20 with a five-line trace, HP 49, saves including the ring bonus, skills with proficiency, and
+the chain-mail speed penalty correctly _suppressed_ with its reason shown. Unauthenticated access
+to a character sheet returns a 307 redirect.
+
+### Review findings fixed
+
+- **`updateBuildAction` wrote unvalidated JSON from a hidden form field straight to the database.**
+  Now validated against a Zod schema, with tests covering the payloads an attacker would actually
+  send.
+- The web app imported `drizzle-orm` directly for dev sign-in. Session helpers moved into
+  `@ttrpg/db`, which owns the ORM — the same boundary fixed in Phase 0.
 
 ### Phase 0 exit criteria
 

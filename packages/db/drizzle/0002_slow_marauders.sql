@@ -1,0 +1,1 @@
+ALTER TABLE "systems" ADD COLUMN "definition" jsonb DEFAULT '{}'::jsonb NOT NULL;
