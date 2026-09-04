@@ -11,13 +11,13 @@ Design intent and full scope live in [PLAN.md](./PLAN.md) — this file tracks e
 
 |                  |                                                                                                                                                      |
 | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Active arc**   | Arc 1 — Foundation                                                                                                                                   |
-| **Active phase** | Phase 2 — 5e system modules                                                                                                                          |
+| **Active arc**   | Arc 2 — The 5e Product                                                                                                                               |
+| **Active phase** | Phase 3 — Compendium                                                                                                                                 |
 | **Status**       | Complete                                                                                                                                             |
-| **Summary**      | 2014 and 2024 encoded as independent data modules. **172 tests** across the workspace. The engine needed no 5e special case — the central bet holds. |
-| **Caveats**      | Vertical slice only — bulk SRD ingestion still to come. OAuth sign-in round-trip still untested (no provider credentials).                           |
+| **Summary**      | Content seeded into Postgres, browse/search/facets, entity pages, structured effect queries. **191 tests**. First real UI; all routes verified live. |
+| **Caveats**      | Vertical slice content only. OAuth sign-in round-trip still untested (no provider credentials).                                                      |
 | **Repo**         | https://github.com/BroJustLeaveMeAlone/DnD                                                                                                           |
-| **Next up**      | Phase 3 — Compendium (browse, search, entity pages, structured queries)                                                                              |
+| **Next up**      | Phase 4 — Character builder + sheet (the largest single phase)                                                                                       |
 
 ---
 
@@ -35,11 +35,11 @@ Statuses: `Not started` · `In progress` · `Complete` · `Blocked`
 
 ### Arc 2 — The 5e Product
 
-| #   | Phase                     | Status      | Notes                                                                    |
-| --- | ------------------------- | ----------- | ------------------------------------------------------------------------ |
-| 3   | Compendium                | Not started | Browse, search, entity pages, structured queries, source filtering       |
-| 4   | Character builder + sheet | Not started | Largest single phase                                                     |
-| 5   | Homebrew authoring        | Not started | Entity editors, effect builder, formula editor, character-scoped content |
+| #   | Phase                     | Status       | Notes                                                                    |
+| --- | ------------------------- | ------------ | ------------------------------------------------------------------------ |
+| 3   | Compendium                | **Complete** | Browse, search, facets, entity pages, structured effect queries          |
+| 4   | Character builder + sheet | Not started  | Largest single phase                                                     |
+| 5   | Homebrew authoring        | Not started  | Entity editors, effect builder, formula editor, character-scoped content |
 
 > **Stopping after Arc 2 still ships a genuinely valuable free 5e character builder.**
 
@@ -205,6 +205,39 @@ Statuses: `Not started` · `In progress` · `Complete` · `Blocked`
   job rather than transcription.
 - `buildSheet` resolves twice to discover `state` grants (armour category, shield) that later
   predicates read. It works and is cheap, but a single-pass design would be cleaner.
+
+---
+
+## Phase 3 — Compendium (Complete)
+
+**Goal:** get content out of TypeScript and into Postgres, and make it browsable.
+
+### Delivered
+
+- [x] JSON serialisation for effects, predicates, and grants. Formulas store as **source text**,
+      so stored content stays readable and diffable for homebrew version history.
+- [x] `seedSystemModule` — idempotent module → Postgres ingestion, plus `pnpm db:seed`
+- [x] Query layer: search, type facets, single-entity fetch, ruleset scoping
+- [x] **Structured effect queries** — "everything that touches AC", "every source of resistance".
+      Possible only because content is data rather than licensed prose.
+- [x] `/compendium` — search, ruleset filter, type facets with counts
+- [x] `/compendium/[system]/[key]` — details, human-readable mechanics, back-references
+- [x] **14 integration tests against real Postgres**, loading `.env` so they run locally too
+      rather than silently skipping
+
+### Verified live
+
+All routes returned 200 against a booted production server with seeded data: browse, filtered
+browse, search, and both entity pages. The Ring of Protection page correctly cross-links to Chain
+Mail, Mage Armor, Shield, and the Defense fighting style purely by structural effect matching.
+
+### Review findings fixed
+
+- **`findByEffect` used a lateral `jsonb_array_elements` join**, which forces a sequential scan
+  over the whole compendium. Rewritten as nested jsonb containment and backed by a GIN index —
+  fine at 50 entities, not fine at 50,000.
+- Effect descriptions rendered "sets ac by 16"; each operation now reads correctly in English.
+- `aria-current="true"` on facet links corrected to `aria-current="page"`.
 
 ### Phase 0 exit criteria
 

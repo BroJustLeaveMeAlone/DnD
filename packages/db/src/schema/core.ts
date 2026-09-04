@@ -153,6 +153,10 @@ export const entities = pgTable(
     unique('entities_system_key_unique').on(table.systemId, table.key),
     index('entities_system_type_idx').on(table.systemId, table.type),
     index('entities_character_idx').on(table.characterId),
+    // Structured effect queries ("everything that touches AC") use jsonb
+    // containment against this column. Without the GIN index every such query
+    // is a sequential scan over the whole compendium.
+    index('entities_grants_gin_idx').using('gin', table.grants),
     // Mirrors the Zod refinement in @ttrpg/schemas. Enforced in the database too,
     // because character-scoped content is a load-bearing invariant and the app
     // is not the only thing that will ever write to this table.

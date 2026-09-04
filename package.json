@@ -19,6 +19,7 @@
     "db:down": "docker compose down",
     "db:generate": "pnpm --filter @ttrpg/db generate",
     "db:migrate": "pnpm --filter @ttrpg/db migrate",
+    "db:seed": "pnpm --filter @ttrpg/db seed",
     "db:studio": "pnpm --filter @ttrpg/db studio",
     "check": "pnpm run format:check && pnpm run lint && pnpm run typecheck && pnpm run test"
   },

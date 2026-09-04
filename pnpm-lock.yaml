@@ -96,6 +96,12 @@ importers:
 
   packages/db:
     dependencies:
+      '@ttrpg/rules-engine':
+        specifier: workspace:*
+        version: link:../rules-engine
+      '@ttrpg/systems-dnd5e':
+        specifier: workspace:*
+        version: link:../systems-dnd5e
       drizzle-orm:
         specifier: ^0.44.7
         version: 0.44.7(@types/pg@8.23.1)(pg@8.23.0)

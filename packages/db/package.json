@@ -27,10 +27,13 @@
     "test": "vitest run",
     "generate": "drizzle-kit generate",
     "migrate": "tsx src/migrate.ts",
+    "seed": "tsx src/seed-cli.ts",
     "push": "drizzle-kit push",
     "studio": "drizzle-kit studio"
   },
   "dependencies": {
+    "@ttrpg/rules-engine": "workspace:*",
+    "@ttrpg/systems-dnd5e": "workspace:*",
     "drizzle-orm": "^0.44.7",
     "pg": "^8.16.3"
   },

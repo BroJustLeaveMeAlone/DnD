@@ -26,3 +26,4 @@ export * from './effect.js';
 export * from './stacking.js';
 export * from './resolve.js';
 export * from './module.js';
+export * from './serialize.js';

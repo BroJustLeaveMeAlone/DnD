@@ -1,0 +1,1 @@
+CREATE INDEX "entities_grants_gin_idx" ON "entities" USING gin ("grants");
