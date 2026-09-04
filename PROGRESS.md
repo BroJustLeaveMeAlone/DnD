@@ -9,15 +9,15 @@ Design intent and full scope live in [PLAN.md](./PLAN.md) — this file tracks e
 
 ## Current Status
 
-|                  |                                                                                                                           |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| **Active arc**   | Arc 3 — Creation                                                                                                          |
-| **Active phase** | Phase 7 — Linter + probe characters                                                                                       |
-| **Status**       | Complete                                                                                                                  |
-| **Summary**      | Deterministic linter and generated probe characters. **251 tests**. Found a real bug in the 2024 module on its first run. |
-| **Caveats**      | No balance diagnostics yet (that is Phase 15). No starter kits. OAuth round-trip still untested.                          |
-| **Repo**         | https://github.com/BroJustLeaveMeAlone/DnD                                                                                |
-| **Next up**      | Phase 8 — Codex (lore entries cross-linked to real mechanics)                                                             |
+|                  |                                                                                                 |
+| ---------------- | ----------------------------------------------------------------------------------------------- |
+| **Active arc**   | Arc 3 — Creation                                                                                |
+| **Active phase** | Phase 8 — Codex                                                                                 |
+| **Status**       | Complete — **Arc 3 finished**                                                                   |
+| **Summary**      | Lore entries with wiki links, backlinks, and binding to real mechanics. **265 tests**.          |
+| **Caveats**      | Codex is system-scoped; campaign scoping arrives with Phase 9. OAuth round-trip still untested. |
+| **Repo**         | https://github.com/BroJustLeaveMeAlone/DnD                                                      |
+| **Next up**      | Phase 9 — Campaigns & party (Arc 4 begins)                                                      |
 
 ---
 
@@ -49,7 +49,7 @@ Statuses: `Not started` · `In progress` · `Complete` · `Blocked`
 | --- | ------------------------- | ------------ | --------------------------------------------------------------- |
 | 6   | System Designer           | **Complete** | Dials, custom attributes and derived stats, schema-driven sheet |
 | 7   | Linter + probe characters | **Complete** | Deterministic. Caught a real bug in the 2024 module immediately |
-| 8   | Codex                     | Not started  | Lore entries cross-linked to real mechanics                     |
+| 8   | Codex                     | **Complete** | Wiki links, backlinks, and entries bound to real mechanics      |
 
 > **Stopping after Arc 3 ships a creation tool nothing else offers.**
 
@@ -407,6 +407,39 @@ looked broken. Fixed before the rule could train anyone to ignore it.
   needs the combat simulator and belongs with Phase 15.
 - The linter runs on demand. Running it automatically on save, and blocking a publish with errors,
   belongs with the Commons in Phase 12.
+
+---
+
+## Phase 8 — Codex (Complete) — Arc 3 finished
+
+**Goal:** world-building prose that connects to mechanics.
+
+### Delivered
+
+- [x] `codex_entries` — ten entry types, per-system, with visibility
+- [x] **Wiki links** written `[[key]]`, extracted on write and stored denormalised so backlinks are
+      an indexed lookup rather than a scan over everyone's prose
+- [x] **Backlinks** — an entry sees everything that references it
+- [x] **Mechanical binding** — `entityKey` ties an entry to a real content entity, so an NPC
+      carries an actual statblock and an artifact _is_ the item. World Anvil has lore without
+      mechanics; D&D Beyond has mechanics without lore. This is the join.
+- [x] **Dangling links** surfaced as "Unwritten" rather than errors — writing a link before its
+      target is a normal way to build a world, and each one is a one-click stub
+- [x] `/systems/[slug]/codex`, entry pages, and a combined create/edit form
+- [x] **14 codex tests**
+
+### A deliberate non-choice
+
+`CodexBody` is **not** a Markdown renderer. Entry bodies are user-authored text that other people
+will read, so anything interpreting HTML would need sanitising to be safe. Splitting on one known
+pattern and emitting React elements cannot inject markup at all. Richer formatting can come later
+through a renderer chosen for its escaping rather than its feature list.
+
+### Deliberately deferred
+
+- The Codex is **system-scoped**. Campaign-scoped lore, DM-private notes, and reveal-to-players
+  mechanics need campaigns, which is Phase 9.
+- No timelines or calendars yet.
 
 ### Phase 0 exit criteria
 

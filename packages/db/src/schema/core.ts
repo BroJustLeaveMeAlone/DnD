@@ -231,6 +231,61 @@ export const campaignMembers = pgTable(
   ],
 );
 
+// --- Codex -------------------------------------------------------------------
+
+export const codexVisibilityEnum = pgEnum('codex_visibility', ['private', 'shared', 'public']);
+
+/**
+ * World-building entries: characters, locations, factions, events, deities.
+ *
+ * The differentiator is `entityKey`: a codex entry can bind to a real content
+ * entity, so an NPC carries an actual statblock and an artifact *is* the item.
+ * World Anvil has lore without mechanics; D&D Beyond has mechanics without
+ * lore. Connecting them is the point. See PLAN.md §6.
+ */
+export const codexEntries = pgTable(
+  'codex_entries',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    systemId: uuid('system_id')
+      .notNull()
+      .references(() => systems.id, { onDelete: 'cascade' }),
+    ownerId: uuid('owner_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+
+    /** character, location, faction, event, deity, item, language, note. */
+    type: text('type').notNull(),
+    key: text('key').notNull(),
+    title: text('title').notNull(),
+    /** Long-form prose. Wiki links are written as [[other-key]]. */
+    body: text('body').notNull().default(''),
+
+    /**
+     * Outbound wiki links, extracted from the body on write. Denormalised so
+     * backlinks are an index lookup rather than a scan of every entry's prose.
+     */
+    links: jsonb('links')
+      .notNull()
+      .default(sql`'[]'::jsonb`),
+
+    /** Optional binding to a content entity, by its key within the system. */
+    entityKey: text('entity_key'),
+
+    visibility: codexVisibilityEnum('visibility').notNull().default('private'),
+
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    unique('codex_system_key_unique').on(table.systemId, table.key),
+    index('codex_system_type_idx').on(table.systemId, table.type),
+    index('codex_owner_idx').on(table.ownerId),
+    // Backlink lookups query containment against this array.
+    index('codex_links_gin_idx').using('gin', table.links),
+  ],
+);
+
 // --- Relations ---------------------------------------------------------------
 
 export const systemsRelations = relations(systems, ({ one, many }) => ({

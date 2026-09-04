@@ -4,3 +4,4 @@ export * from './system.js';
 export * from './character.js';
 export * from './authoring.js';
 export * from './designer.js';
+export * from './codex.js';

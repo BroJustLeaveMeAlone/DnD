@@ -47,6 +47,12 @@ export default async function SystemPage({
         </div>
         <div className="flex gap-2">
           <Link
+            href={`/systems/${slug}/codex`}
+            className="rounded-md border border-neutral-300 px-4 py-2 text-sm font-medium hover:bg-neutral-100 dark:border-neutral-700 dark:hover:bg-neutral-800"
+          >
+            Codex
+          </Link>
+          <Link
             href={`/systems/${slug}/lint`}
             className="rounded-md border border-neutral-300 px-4 py-2 text-sm font-medium hover:bg-neutral-100 dark:border-neutral-700 dark:hover:bg-neutral-800"
           >
