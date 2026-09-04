@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # CI-only throwaway values. Real secrets never live in this file.
+  DATABASE_URL: postgresql://ttrpg:ttrpg_dev_password@localhost:5432/ttrpg_test
+  AUTH_SECRET: ci-only-not-a-real-secret-do-not-reuse
+  AUTH_URL: http://localhost:3000
+  AUTH_TRUST_HOST: 'true'
+
+jobs:
+  verify:
+    name: Format, lint, typecheck, test, build
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: ttrpg
+          POSTGRES_PASSWORD: ttrpg_dev_password
+          POSTGRES_DB: ttrpg_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ttrpg -d ttrpg_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Apply database migrations
+        run: pnpm run db:migrate
+
+      - name: Check formatting
+        run: pnpm run format:check
+
+      - name: Lint
+        run: pnpm run lint
+
+      - name: Typecheck
+        run: pnpm run typecheck
+
+      - name: Test
+        run: pnpm run test
+
+      - name: Build
+        run: pnpm run build

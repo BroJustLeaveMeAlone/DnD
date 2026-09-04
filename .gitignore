@@ -1,0 +1,40 @@
+# dependencies
+node_modules/
+.pnpm-store/
+
+# builds
+dist/
+build/
+.next/
+out/
+*.tsbuildinfo
+
+# turbo
+.turbo/
+
+# env — .env.example is committed, real env files are not
+.env
+.env.*
+!.env.example
+
+# test / coverage
+coverage/
+.vitest/
+test-results/
+playwright-report/
+
+# editors + OS
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+
+# logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# local data
+/data/
+/uploads/
