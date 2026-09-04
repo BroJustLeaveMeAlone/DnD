@@ -1,0 +1,2 @@
+ALTER TABLE "entities" DROP CONSTRAINT "entities_system_key_unique";--> statement-breakpoint
+ALTER TABLE "entities" ADD CONSTRAINT "entities_system_key_unique" UNIQUE NULLS NOT DISTINCT("system_id","key","character_id");

@@ -49,11 +49,16 @@ describe('core domain tables', () => {
     expect(checks).toContain('entities_character_scope_check');
   });
 
-  it('entity keys are unique within a system, not globally', () => {
+  it('entity keys are unique per system and per character, not globally', () => {
     const constraint = getTableConfig(entities).uniqueConstraints.find(
       (u) => u.name === 'entities_system_key_unique',
     );
-    expect(constraint?.columns.map((c) => c.name)).toEqual(['system_id', 'key']);
+    expect(constraint?.columns.map((c) => c.name)).toEqual(['system_id', 'key', 'character_id']);
+
+    // NULLS NOT DISTINCT is the load-bearing half. Without it Postgres treats
+    // every NULL character_id as distinct, so a system could hold unlimited
+    // rows with the same key — the exact thing this constraint exists to stop.
+    expect(constraint?.nullsNotDistinct).toBe(true);
   });
 
   it('systems can reference a parent, so forks form a tree', () => {

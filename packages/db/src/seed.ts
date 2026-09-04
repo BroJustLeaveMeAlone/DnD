@@ -93,7 +93,9 @@ export async function seedSystemModule(
       .insert(entities)
       .values(rows)
       .onConflictDoUpdate({
-        target: [entities.systemId, entities.key],
+        // Must name every column in entities_system_key_unique, or Postgres
+        // cannot infer the arbiter index (42P10).
+        target: [entities.systemId, entities.key, entities.characterId],
         set: {
           name: sql`excluded.name`,
           type: sql`excluded.type`,

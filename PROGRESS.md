@@ -9,15 +9,15 @@ Design intent and full scope live in [PLAN.md](./PLAN.md) — this file tracks e
 
 ## Current Status
 
-|                  |                                                                                                                                                   |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Active arc**   | Arc 2 — The 5e Product                                                                                                                            |
-| **Active phase** | Phase 4 — Character builder + sheet                                                                                                               |
-| **Status**       | Complete                                                                                                                                          |
-| **Summary**      | Characters build from **database** content, not the TS modules. Sheet renders every stat with its provenance trace. **208 tests**. Verified live. |
-| **Caveats**      | Vertical slice content only. Dev-only sign-in in place; OAuth round-trip still untested (no provider credentials).                                |
-| **Repo**         | https://github.com/BroJustLeaveMeAlone/DnD                                                                                                        |
-| **Next up**      | Phase 5 — Homebrew authoring (entity editors, effect builder, formula editor)                                                                     |
+|                  |                                                                                                                                              |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Active arc**   | Arc 2 — The 5e Product                                                                                                                       |
+| **Active phase** | Phase 5 — Homebrew authoring                                                                                                                 |
+| **Status**       | Complete — **Arc 2 finished**                                                                                                                |
+| **Summary**      | Fork a ruleset, author content with a structured effect builder and live formula validation. **219 tests**. Homebrew drives real sheet math. |
+| **Caveats**      | Effect builder edits one grant per entity. Vertical slice content. OAuth round-trip still untested.                                          |
+| **Repo**         | https://github.com/BroJustLeaveMeAlone/DnD                                                                                                   |
+| **Next up**      | Phase 6 — System Designer (per-subsystem dials, starter kits, auto-generated sheets)                                                         |
 
 ---
 
@@ -35,11 +35,11 @@ Statuses: `Not started` · `In progress` · `Complete` · `Blocked`
 
 ### Arc 2 — The 5e Product
 
-| #   | Phase                     | Status       | Notes                                                                    |
-| --- | ------------------------- | ------------ | ------------------------------------------------------------------------ |
-| 3   | Compendium                | **Complete** | Browse, search, facets, entity pages, structured effect queries          |
-| 4   | Character builder + sheet | **Complete** | Builds from DB content. Provenance on every stat                         |
-| 5   | Homebrew authoring        | Not started  | Entity editors, effect builder, formula editor, character-scoped content |
+| #   | Phase                     | Status       | Notes                                                                      |
+| --- | ------------------------- | ------------ | -------------------------------------------------------------------------- |
+| 3   | Compendium                | **Complete** | Browse, search, facets, entity pages, structured effect queries            |
+| 4   | Character builder + sheet | **Complete** | Builds from DB content. Provenance on every stat                           |
+| 5   | Homebrew authoring        | **Complete** | Forking, effect builder, live formula validation, character-scoped content |
 
 > **Stopping after Arc 2 still ships a genuinely valuable free 5e character builder.**
 
@@ -280,6 +280,51 @@ to a character sheet returns a 307 redirect.
   send.
 - The web app imported `drizzle-orm` directly for dev sign-in. Session helpers moved into
   `@ttrpg/db`, which owns the ORM — the same boundary fixed in Phase 0.
+
+---
+
+## Phase 5 — Homebrew Authoring (Complete) — Arc 2 finished
+
+**Goal:** a non-programmer can fork a ruleset and author content that actually calculates.
+
+### Delivered
+
+- [x] **Forking** — copies every entity into a system the user owns. A snapshot, not a reference:
+      the point of forking is that the original stops moving under you.
+- [x] `upsertEntity` / `deleteEntity`, ownership enforced in the WHERE clause
+- [x] **Structured effect builder** — dropdowns and typed fields, not raw JSON. Six effect kinds,
+      conditions, level gates, trace notes.
+- [x] **Live formula validation** against the real parser, so an accepted formula cannot fail
+      later. Shows which references a formula depends on.
+- [x] Server-side re-validation: schema shape _and_ every formula parsed before any DB write
+- [x] `/systems`, `/systems/[slug]`, `/systems/[slug]/new`, `/systems/[slug]/[key]`
+- [x] Character-scoped content — private to one character, excluded from compendium listings
+- [x] Version bump on edit, so pinned consumers can opt in
+
+### Verified live
+
+Forked a ruleset (26 entities copied), authored a feat granting
+`floor(level / 4) + 1` AC and lightning immunity gated on `level >= 3`, and confirmed a level 8
+character resolves to AC 19 with the homebrew in its provenance trace and zero diagnostics.
+Unauthenticated access to an owned system returns a 307.
+
+### Review finding — a silent data-loss bug
+
+**`UNIQUE (system_id, key)` meant two characters could not each own private content under the
+same key** — and the upsert would have _overwritten_ one character's content with another's rather
+than failing. Two sorcerers both naming a technique `domain` is the ordinary case, not an edge
+case. Fixed with `UNIQUE NULLS NOT DISTINCT (system_id, key, character_id)`: system keys stay
+unique per system, character keys stay unique per character. Postgres treats NULLs as distinct by
+default, so `NULLS NOT DISTINCT` is the load-bearing half — without it the constraint would permit
+unlimited duplicate system-scoped keys.
+
+### Deliberately deferred
+
+- The effect builder edits **one grant per entity**. Enough for feats, items, species, and
+  conditions; a full class needs many grants at different levels, which is a repeater UI rather
+  than a new concept.
+- No fork _diff_ view yet — you cannot see what your fork changed relative to its parent. That
+  belongs with the Commons attribution work in Phase 12.
 
 ### Phase 0 exit criteria
 

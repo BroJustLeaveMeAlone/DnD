@@ -160,7 +160,15 @@ export const entities = pgTable(
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
-    unique('entities_system_key_unique').on(table.systemId, table.key),
+    // NULLS NOT DISTINCT is load-bearing. Postgres normally treats NULLs as
+    // distinct, so a plain UNIQUE over these three columns would let a system
+    // hold unlimited rows with the same key and a NULL character_id. With this,
+    // system-scoped keys stay unique per system, while two characters can each
+    // own private content under the same key — a technique named `domain`
+    // belongs to one character, not to the system.
+    unique('entities_system_key_unique')
+      .on(table.systemId, table.key, table.characterId)
+      .nullsNotDistinct(),
     index('entities_system_type_idx').on(table.systemId, table.type),
     index('entities_character_idx').on(table.characterId),
     // Structured effect queries ("everything that touches AC") use jsonb
