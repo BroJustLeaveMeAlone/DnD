@@ -12,11 +12,12 @@ Design intent and full scope live in [PLAN.md](./PLAN.md) — this file tracks e
 |                  |                                                                                                                                                                 |
 | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Active arc**   | Arc 1 — Foundation                                                                                                                                              |
-| **Active phase** | Phase 0 — Foundations                                                                                                                                           |
-| **Status**       | Complete, with two caveats                                                                                                                                      |
-| **Summary**      | Monorepo installs, formats, lints, typechecks, tests (28 passing), and builds. Postgres up on **5433**, 10 tables migrated, app boots, `/api/health` all green. |
-| **Caveats**      | OAuth sign-in round-trip untested (no provider credentials registered). CI never executed — no GitHub remote yet.                                               |
-| **Next up**      | Phase 1 — Rules engine core (generic, proven by golden tests, no UI)                                                                                            |
+| **Active phase** | Phase 1 — Rules engine core                                                                                                                                     |
+| **Status**       | Complete                                                                                                                                                        |
+| **Summary**      | Formula DSL, predicates, effect vocabulary, stacking, provenance, resolution pipeline. **146 tests** across the workspace, 117 in the engine. Build + DB green. |
+| **Caveats**      | OAuth sign-in round-trip still untested (no provider credentials registered).                                                                                   |
+| **Repo**         | https://github.com/BroJustLeaveMeAlone/DnD                                                                                                                      |
+| **Next up**      | Phase 2 — 5e system modules (2014 + 2024 as independent data modules)                                                                                           |
 
 ---
 
@@ -29,7 +30,7 @@ Statuses: `Not started` · `In progress` · `Complete` · `Blocked`
 | #   | Phase             | Status       | Notes                                                                        |
 | --- | ----------------- | ------------ | ---------------------------------------------------------------------------- |
 | 0   | Foundations       | **Complete** | Monorepo, schemas, Postgres + Drizzle, auth, CI, Docker Compose              |
-| 1   | Rules engine core | Not started  | Non-retrofittable. Must be generic from day one — no `character.strength`    |
+| 1   | Rules engine core | **Complete** | Generic from day one. Proven by a golden suite with zero 5e concepts in it   |
 | 2   | 5e system modules | Not started  | 2014 + 2024 as independent data modules. The forcing function for generality |
 
 ### Arc 2 — The 5e Product
@@ -119,7 +120,39 @@ Statuses: `Not started` · `In progress` · `Complete` · `Blocked`
 ### CI
 
 - [x] GitHub Actions workflow: install → migrate → format → lint → typecheck → test → build
-- [ ] **Never executed.** No GitHub remote exists yet, so the workflow is unverified.
+- [x] Remote wired to https://github.com/BroJustLeaveMeAlone/DnD — first push exercises the workflow
+
+---
+
+## Phase 1 — Rules Engine Core (Complete)
+
+**Goal:** a generic, deterministic, sandboxed engine proven by tests alone. No UI.
+
+### Delivered
+
+- [x] **Formula DSL** — tokenizer, Pratt parser, tree-walking interpreter. Arithmetic,
+      comparison, boolean logic, 8 functions, dotted references. No `eval`, no `new Function`.
+- [x] **Predicates** — `always` / `never` / `flag` / `expression` / `all` / `any` / `not`
+- [x] **Effect vocabulary** — numeric, proficiency, roll-bias, damage-response, resource, grant
+- [x] **Stacking** — set (highest wins) → typed/untyped adds → floors → caps
+- [x] **Provenance** — every number carries a trace, including entries that did _not_ apply
+- [x] **Resolution pipeline** — lazy dependency resolution, so authors never order declarations
+- [x] **Diagnostics** — circular dependency, unknown reference, formula error, contradictory bounds
+- [x] **117 engine tests**, including a golden suite for a system containing no 5e concepts
+
+### Guardrails now enforced by tests
+
+- Zero runtime dependencies
+- No `eval` / `new Function` / `process.env` anywhere in engine source (comments stripped first)
+- No 5e vocabulary in engine source — `spellSlot`, `armorClass`, `proficiencyBonus` etc. are banned
+- Prototype-chain keys (`constructor`, `__proto__`) cannot be reached through a formula
+
+### Deliberately deferred
+
+- `override` effects (campaign house rules) — the mechanism exists via `set`; the campaign-scoped
+  wiring lands with Phase 9.
+- Resistance/vulnerability **cancellation** is not modelled. The engine reports the strongest
+  response present; whether they annul each other is a per-system rules question.
 
 ### Phase 0 exit criteria
 

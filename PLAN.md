@@ -94,11 +94,11 @@ Pure TypeScript, zero runtime dependencies, identical on server and client (requ
 Tap any value and see where it came from:
 
 ```
-AC 17 = 11  Studded Leather (base)
+AC 18 = 11  Studded Leather (base)
          +3  DEX modifier
          +1  Ring of Protection      [attuned]
          +1  Defense fighting style  [wearing armor]
-         +1  Shield of Faith         [concentration, 10 min]
+         +2  Shield of Faith         [concentration, 10 min]
 ```
 
 A genuine differentiator, the only sane way to debug homebrew, and the engine's own test oracle.
