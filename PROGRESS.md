@@ -120,7 +120,10 @@ Statuses: `Not started` · `In progress` · `Complete` · `Blocked`
 ### CI
 
 - [x] GitHub Actions workflow: install → migrate → format → lint → typecheck → test → build
-- [x] Remote wired to https://github.com/BroJustLeaveMeAlone/DnD — first push exercises the workflow
+- [x] Remote wired to https://github.com/BroJustLeaveMeAlone/DnD
+- [x] **CI verified green** on Node 24 against a real Postgres service container.
+      First run failed: `pnpm/action-setup` rejects a `version` input when
+      `packageManager` is set in package.json. Fixed by dropping the input.
 
 ---
 
