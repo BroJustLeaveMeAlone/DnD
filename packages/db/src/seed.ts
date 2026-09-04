@@ -57,6 +57,7 @@ export async function seedSystemModule(
       definition: {
         attributes: module.attributes,
         derived: module.derived,
+        proficiencyScale: module.proficiencyScale,
         source: module.source,
       },
     })
@@ -67,6 +68,7 @@ export async function seedSystemModule(
         definition: {
           attributes: module.attributes,
           derived: module.derived,
+          proficiencyScale: module.proficiencyScale,
           source: module.source,
         },
         updatedAt: new Date(),

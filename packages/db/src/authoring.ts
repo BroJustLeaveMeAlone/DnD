@@ -73,6 +73,58 @@ export async function forkSystem(
   };
 }
 
+/**
+ * Replaces a system's attribute and derived-stat definitions.
+ *
+ * This is the destructive end of the designer: removing an attribute breaks
+ * every formula that referenced it. The engine degrades rather than crashing
+ * (the effect is dropped and a diagnostic raised), and Phase 7's linter is what
+ * turns that into a warning the author sees before a player does.
+ */
+export async function updateSystemDefinition(
+  db: Database,
+  input: { systemSlug: string; ownerId: string; definition: Record<string, unknown> },
+): Promise<boolean> {
+  const updated = await db
+    .update(systems)
+    .set({ definition: input.definition, updatedAt: new Date() })
+    .where(and(eq(systems.slug, input.systemSlug), eq(systems.ownerId, input.ownerId)))
+    .returning({ id: systems.id });
+
+  return updated.length > 0;
+}
+
+export async function updateSystemDials(
+  db: Database,
+  input: { systemSlug: string; ownerId: string; dials: Record<string, string> },
+): Promise<boolean> {
+  const updated = await db
+    .update(systems)
+    .set({ dials: input.dials, updatedAt: new Date() })
+    .where(and(eq(systems.slug, input.systemSlug), eq(systems.ownerId, input.ownerId)))
+    .returning({ id: systems.id });
+
+  return updated.length > 0;
+}
+
+export async function getOwnedSystem(db: Database, slug: string, ownerId: string) {
+  const [row] = await db
+    .select({
+      slug: systems.slug,
+      name: systems.name,
+      summary: systems.summary,
+      visibility: systems.visibility,
+      dials: systems.dials,
+      definition: systems.definition,
+      forkedFromId: systems.forkedFromId,
+    })
+    .from(systems)
+    .where(and(eq(systems.slug, slug), eq(systems.ownerId, ownerId)))
+    .limit(1);
+
+  return row;
+}
+
 export async function listOwnedSystems(db: Database, ownerId: string) {
   return db
     .select({

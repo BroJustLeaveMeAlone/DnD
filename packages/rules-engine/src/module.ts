@@ -1,4 +1,4 @@
-import { type BoundEffect, type Effect, bind } from './effect.js';
+import { type BoundEffect, type Effect, type ProficiencyLevel, bind } from './effect.js';
 import { Formula, type FormulaValue } from './formula/index.js';
 import { type Predicate, always } from './predicate.js';
 import type { ResolutionInput } from './resolve.js';
@@ -36,6 +36,20 @@ export interface DerivedStatDefinition {
   base?: number;
   /** Computed instead of a flat base. Emitted as a `set` from the module. */
   formula?: string;
+  /**
+   * Presentation hints for an auto-generated sheet.
+   *
+   * These live in the module rather than the renderer because whether a number
+   * reads as `+2` or `2` is a rules-flavour question. A renderer that guessed
+   * would be wrong for some system, and hardcoding 5e's answers would put a 5e
+   * assumption back into generic code.
+   */
+  display?: {
+    /** Render as a signed modifier: `+2`, `-1`. */
+    signed?: boolean;
+    /** Appended to the value: `ft`, `+`. */
+    suffix?: string;
+  };
 }
 
 /** A bundle of effects an entity confers, optionally gated. */
@@ -64,6 +78,12 @@ export interface SystemModule {
   source: { id: string; name: string; license: string | null };
   attributes: AttributeDefinition[];
   derived: DerivedStatDefinition[];
+  /**
+   * What each proficiency rank contributes, exposed to formulas as
+   * `prof.<target>`. Lives in the module because "expertise doubles your bonus"
+   * is a 5e rule, not a universal one.
+   */
+  proficiencyScale?: Readonly<Record<ProficiencyLevel, number>>;
   entities: ModuleEntity[];
 }
 

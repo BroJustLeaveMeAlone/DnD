@@ -22,6 +22,7 @@ import { characters, entities, systems } from './schema/index.js';
 interface StoredDefinition {
   attributes?: AttributeDefinition[];
   derived?: DerivedStatDefinition[];
+  proficiencyScale?: SystemModule['proficiencyScale'];
   source?: SystemModule['source'];
 }
 
@@ -70,6 +71,7 @@ export async function loadSystemModule(
     source: definition.source ?? { id: system.slug, name: system.name, license: null },
     attributes: definition.attributes ?? [],
     derived: definition.derived ?? [],
+    ...(definition.proficiencyScale ? { proficiencyScale: definition.proficiencyScale } : {}),
     entities: moduleEntities,
   };
 }

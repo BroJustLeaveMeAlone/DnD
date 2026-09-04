@@ -45,12 +45,20 @@ export default async function SystemPage({
           <h1 className="text-3xl font-semibold tracking-tight">{system.name}</h1>
           <p className="mt-1 font-mono text-xs text-neutral-500">{system.slug}</p>
         </div>
-        <Link
-          href={`/systems/${slug}/new`}
-          className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-700 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-neutral-300"
-        >
-          New content
-        </Link>
+        <div className="flex gap-2">
+          <Link
+            href={`/systems/${slug}/design`}
+            className="rounded-md border border-neutral-300 px-4 py-2 text-sm font-medium hover:bg-neutral-100 dark:border-neutral-700 dark:hover:bg-neutral-800"
+          >
+            Design
+          </Link>
+          <Link
+            href={`/systems/${slug}/new`}
+            className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-700 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-neutral-300"
+          >
+            New content
+          </Link>
+        </div>
       </header>
 
       {error && (

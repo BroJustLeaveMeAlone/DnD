@@ -11,13 +11,13 @@ Design intent and full scope live in [PLAN.md](./PLAN.md) — this file tracks e
 
 |                  |                                                                                                                                              |
 | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Active arc**   | Arc 2 — The 5e Product                                                                                                                       |
-| **Active phase** | Phase 5 — Homebrew authoring                                                                                                                 |
-| **Status**       | Complete — **Arc 2 finished**                                                                                                                |
-| **Summary**      | Fork a ruleset, author content with a structured effect builder and live formula validation. **219 tests**. Homebrew drives real sheet math. |
-| **Caveats**      | Effect builder edits one grant per entity. Vertical slice content. OAuth round-trip still untested.                                          |
+| **Active arc**   | Arc 3 — Creation                                                                                                                             |
+| **Active phase** | Phase 6 — System Designer                                                                                                                    |
+| **Status**       | Complete                                                                                                                                     |
+| **Summary**      | Per-subsystem dials, custom attributes and derived stats, and a schema-driven sheet. **225 tests**. A cursed-energy system renders natively. |
+| **Caveats**      | No starter kits beyond forking 5e. Designer lacks live formula feedback. OAuth round-trip still untested.                                    |
 | **Repo**         | https://github.com/BroJustLeaveMeAlone/DnD                                                                                                   |
-| **Next up**      | Phase 6 — System Designer (per-subsystem dials, starter kits, auto-generated sheets)                                                         |
+| **Next up**      | Phase 7 — Linter + probe characters (what makes creation freedom survivable)                                                                 |
 
 ---
 
@@ -45,11 +45,11 @@ Statuses: `Not started` · `In progress` · `Complete` · `Blocked`
 
 ### Arc 3 — Creation
 
-| #   | Phase                     | Status      | Notes                                                             |
-| --- | ------------------------- | ----------- | ----------------------------------------------------------------- |
-| 6   | System Designer           | Not started | Per-subsystem dials, starter kits, forking, auto-generated sheets |
-| 7   | Linter + probe characters | Not started | Deterministic. What makes creation freedom survivable             |
-| 8   | Codex                     | Not started | Lore entries cross-linked to real mechanics                       |
+| #   | Phase                     | Status       | Notes                                                           |
+| --- | ------------------------- | ------------ | --------------------------------------------------------------- |
+| 6   | System Designer           | **Complete** | Dials, custom attributes and derived stats, schema-driven sheet |
+| 7   | Linter + probe characters | Not started  | Deterministic. What makes creation freedom survivable           |
+| 8   | Codex                     | Not started  | Lore entries cross-linked to real mechanics                     |
 
 > **Stopping after Arc 3 ships a creation tool nothing else offers.**
 
@@ -325,6 +325,48 @@ unlimited duplicate system-scoped keys.
   than a new concept.
 - No fork _diff_ view yet — you cannot see what your fork changed relative to its parent. That
   belongs with the Commons attribution work in Phase 12.
+
+---
+
+## Phase 6 — System Designer (Complete)
+
+**Goal:** define what a system _is_, and render any system's sheet from its own schema.
+
+### Delivered
+
+- [x] **Per-subsystem dials** — ten subsystems, each independently inherited / tweaked / replaced.
+      A system with no parent may only declare `replaced`, enforced in the UI and the schema.
+- [x] **Attribute editor** — your own stat block, with modifier formulas
+- [x] **Derived stat editor** — AC is not special; it is one of these
+- [x] **Per-system proficiency scale** — "expertise doubles your bonus" is a 5e rule, so it moved
+      out of the engine and into the module
+- [x] **`AutoSheet`** — the character sheet now renders from `module.attributes` and
+      `module.derived`. Nothing in it knows what an ability score or an Armor Class is.
+- [x] Server-side validation of the whole definition, including parsing every formula
+- [x] **6 designer tests**, building a cursed-energy system entirely through the database
+
+### The test that matters
+
+A system with **no 5e concepts at all** — cursed energy and body instead of ability scores, a
+named grade track instead of levels, technique output and barrier instead of AC — built through
+the same data path a user would use, and resolved from database rows. Verified live: the sheet
+renders `CE +14 · BDY +10 · Grade 4 · Technique Output 70 · Barrier 15`, with no 5e stat present.
+
+### Review finding
+
+Replacing the hardcoded 5e sheet with `AutoSheet` **silently regressed formatting** — Initiative
+lost its `+` sign and critical range lost its `+` suffix, because those were hardcoded 5e
+formatters. Fixed by moving presentation into module data (`display: { signed, suffix }`) rather
+than reintroducing 5e assumptions into generic code or letting the renderer guess.
+
+### Deliberately deferred
+
+- **Starter kits.** Forking 5e is the only starting point; PLAN.md also wants grimdark, superhero,
+  and shonen-action templates. Those are content, not mechanism.
+- The designer has no **live formula feedback** — the server rejects a bad formula with a message,
+  but the effect builder's as-you-type validation is not wired in here yet.
+- Removing an attribute that formulas reference degrades with a diagnostic rather than warning
+  first. That warning is exactly Phase 7.
 
 ### Phase 0 exit criteria
 

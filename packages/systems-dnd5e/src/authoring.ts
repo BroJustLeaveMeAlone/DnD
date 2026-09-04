@@ -105,6 +105,18 @@ export const noShield: Predicate = { kind: 'not', of: flag('shield') };
 export const PROFICIENCY_BONUS = 'floor((level - 1) / 4) + 2';
 
 /**
+ * What each proficiency rank contributes. Both editions score it identically.
+ * It belongs to the module rather than the engine because "expertise doubles
+ * your bonus" is a 5e rule — a system where expertise is a flat +3 sets its own.
+ */
+export const PROFICIENCY_SCALE = {
+  none: 0,
+  half: 0.5,
+  proficient: 1,
+  expertise: 2,
+} as const;
+
+/**
  * Ability score to modifier, over the *resolved* score — so increases from a
  * species or background are already stacked in by the time this evaluates.
  */
