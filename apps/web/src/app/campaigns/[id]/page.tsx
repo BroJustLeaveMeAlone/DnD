@@ -1,4 +1,11 @@
-import { eligibleCharacters, getCampaign, getDatabase, loadSystemModule, roleIn } from '@ttrpg/db';
+import {
+  eligibleCharacters,
+  getCampaign,
+  getDatabase,
+  listEncounters,
+  loadSystemModule,
+  roleIn,
+} from '@ttrpg/db';
 import {
   type BoundEffect,
   type CharacterBuild,
@@ -19,6 +26,7 @@ import {
   setHouseRulesAction,
   setRoleAction,
 } from '@/server/campaigns';
+import { createEncounterAction } from '@/server/encounters';
 
 export const dynamic = 'force-dynamic';
 
@@ -52,9 +60,10 @@ export default async function CampaignPage({
   const role = await roleIn(db, id, session.user.id);
   const isGm = role === 'gm';
 
-  const [module, mine] = await Promise.all([
+  const [module, mine, encounters] = await Promise.all([
     loadSystemModule(db, campaign.systemSlug),
     eligibleCharacters(db, id, session.user.id),
+    listEncounters(db, id, session.user.id),
   ]);
   if (!module) notFound();
 
@@ -275,6 +284,42 @@ export default async function CampaignPage({
             </button>
           </form>
         </div>
+      </section>
+
+      <section className="mt-8">
+        <h2 className="mb-3 text-sm font-medium">Encounters</h2>
+        {encounters.length === 0 ? (
+          <p className="text-xs text-neutral-500">None yet.</p>
+        ) : (
+          <ul className="divide-y divide-neutral-200 dark:divide-neutral-800">
+            {encounters.map((encounter) => (
+              <li key={encounter.id} className="py-2">
+                <Link
+                  href={`/encounters/${encounter.id}`}
+                  className="text-sm underline-offset-4 hover:underline"
+                >
+                  {encounter.name}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+        {isGm && (
+          <form action={createEncounterAction} className="mt-3 flex gap-2">
+            <input type="hidden" name="campaignId" value={campaign.id} />
+            <input
+              name="name"
+              placeholder="Encounter name"
+              className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+            />
+            <button
+              type="submit"
+              className="rounded-md border border-neutral-300 px-3 py-1.5 text-xs hover:bg-neutral-100 dark:border-neutral-700 dark:hover:bg-neutral-800"
+            >
+              New encounter
+            </button>
+          </form>
+        )}
       </section>
 
       {isGm && (

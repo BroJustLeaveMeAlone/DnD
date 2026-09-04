@@ -28,3 +28,5 @@ export * from './resolve.js';
 export * from './module.js';
 export * from './serialize.js';
 export * from './lint.js';
+export * from './dice.js';
+export * from './combat.js';

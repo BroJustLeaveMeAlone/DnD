@@ -5,6 +5,7 @@ export * from './characters.js';
 export * from './authoring.js';
 export * from './codex.js';
 export * from './campaigns.js';
+export * from './encounters.js';
 export * from './sessions.js';
 export * from './seed.js';
 export * as schema from './schema/index.js';

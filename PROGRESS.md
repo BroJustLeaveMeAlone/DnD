@@ -9,15 +9,15 @@ Design intent and full scope live in [PLAN.md](./PLAN.md) — this file tracks e
 
 ## Current Status
 
-|                  |                                                                                                              |
-| ---------------- | ------------------------------------------------------------------------------------------------------------ |
-| **Active arc**   | Arc 4 — Play                                                                                                 |
-| **Active phase** | Phase 9 — Campaigns & party                                                                                  |
-| **Status**       | Complete                                                                                                     |
-| **Summary**      | Campaigns, invites, roles, party dashboard, and house rules that appear in provenance traces. **284 tests**. |
-| **Caveats**      | House rules edited as raw JSON — no builder UI yet. OAuth round-trip still untested.                         |
-| **Repo**         | https://github.com/BroJustLeaveMeAlone/DnD                                                                   |
-| **Next up**      | Phase 10 — Dice + combat tracker                                                                             |
+|                  |                                                                                                |
+| ---------------- | ---------------------------------------------------------------------------------------------- |
+| **Active arc**   | Arc 4 — Play                                                                                   |
+| **Active phase** | Phase 10 — Dice + combat tracker                                                               |
+| **Status**       | Complete                                                                                       |
+| **Summary**      | Full dice notation, pure combat transitions, and a working initiative tracker. **356 tests**.  |
+| **Caveats**      | No realtime sync — players refresh to see changes. House rules still raw JSON. OAuth untested. |
+| **Repo**         | https://github.com/BroJustLeaveMeAlone/DnD                                                     |
+| **Next up**      | Phase 11 — VTT (largest risk item; roughly doubles the project)                                |
 
 ---
 
@@ -58,7 +58,7 @@ Statuses: `Not started` · `In progress` · `Complete` · `Blocked`
 | #   | Phase                 | Status       | Notes                                                  |
 | --- | --------------------- | ------------ | ------------------------------------------------------ |
 | 9   | Campaigns & party     | **Complete** | Roles, invites, party dashboard, house rules in traces |
-| 10  | Dice + combat tracker | Not started  | Standalone-usable for in-person tables                 |
+| 10  | Dice + combat tracker | **Complete** | Dice notation, pure transitions, initiative tracker    |
 | 11  | VTT                   | Not started  | Largest risk item. Roughly doubles the project         |
 
 ### Arc 5 — Community & Depth
@@ -477,6 +477,47 @@ through a renderer chosen for its escaping rather than its feature list.
 - House rules are edited as **raw JSON**. The effect builder from Phase 5 should be reused here;
   it needs a mode that is not tied to an entity.
 - No session log, quest tracker, or shared party inventory yet.
+
+---
+
+## Phase 10 — Dice + Combat Tracker (Complete)
+
+**Goal:** run a fight, with real dice.
+
+### Delivered
+
+- [x] **Dice notation** — counts, sides, constants, signs, keep/drop highest/lowest, rerolls
+      (`r` and `ro`), exploding, min/max clamps. Bounded at 1000 dice and 1000 sides.
+- [x] **Randomness is injected, never sourced.** A seeded generator replays a roll exactly, which
+      the shared roll feed will depend on — a client and a server replaying one roll must agree.
+- [x] **Pure combat transitions** in the engine: damage, healing, temporary hit points, conditions,
+      concentration, death saves, turn advance. State in, new state out, no mutation, no I/O.
+- [x] `encounters` table — one JSONB document per encounter, so a turn advance is one atomic write
+- [x] Initiative tracker UI: add combatants, damage/heal (accepts `2d6+3`), temp HP, conditions
+      with durations, death saves, turn advance, roll log
+- [x] **72 new engine tests** (44 dice, 28 combat)
+
+### Rules decisions worth naming
+
+- **Temporary hit points are a separate pool** absorbing damage before it reaches current HP, and
+  they replace rather than stack. Getting either backwards silently inflates effective health.
+- **Dropping to zero ends concentration outright** — no save is offered, which is correct 5e and
+  easy to get wrong.
+- **Healing from negative HP heals from zero**, not from the deficit. Healing 5 at −6 gives 5.
+- **Conditions tick at the end of the affected combatant's turn**, not the end of the round.
+  Ticking per round would make "1 round" mean different lengths depending on initiative. A
+  condition applied during the target's own turn therefore expires when that turn ends — documented
+  and tested rather than special-cased.
+- **Initiative tiebreaks are rolled once and stored.** Re-deriving them per render would reorder
+  the list mid-combat.
+- The 10-point concentration threshold is **passed in, not assumed** — that number is a 5e rule, so
+  a system without concentration passes null.
+
+### Deliberately deferred
+
+- **No realtime sync.** Players must refresh to see the tracker change. PLAN.md wants WebSockets
+  here; the state document is already shaped for it, but it is a phase of its own.
+- No encounter builder, XP budgets, or monster import from the compendium.
 
 ### Phase 0 exit criteria
 

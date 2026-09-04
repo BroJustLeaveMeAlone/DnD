@@ -43,6 +43,13 @@
       "when": 1788560201636,
       "tag": "0005_simple_makkari",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1788561023456,
+      "tag": "0006_loose_strong_guy",
+      "breakpoints": true
     }
   ]
 }

@@ -1,6 +1,7 @@
 import { relations, sql } from 'drizzle-orm';
 import {
   type AnyPgColumn,
+  boolean,
   check,
   index,
   integer,
@@ -236,6 +237,34 @@ export const campaignMembers = pgTable(
     primaryKey({ columns: [table.campaignId, table.userId] }),
     index('campaign_members_user_idx').on(table.userId),
   ],
+);
+
+// --- Encounters --------------------------------------------------------------
+
+/**
+ * Combat encounters, stored as one JSONB document.
+ *
+ * A round is read and written whole, dozens of times a session, and always by
+ * one GM — so a document avoids a join per combatant and keeps each turn
+ * advance a single atomic write. It also makes an encounter trivially
+ * replayable, which the Phase 15 simulator will want.
+ */
+export const encounters = pgTable(
+  'encounters',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    campaignId: uuid('campaign_id')
+      .notNull()
+      .references(() => campaigns.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    state: jsonb('state')
+      .notNull()
+      .default(sql`'{}'::jsonb`),
+    active: boolean('active').notNull().default(false),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('encounters_campaign_idx').on(table.campaignId)],
 );
 
 // --- Codex -------------------------------------------------------------------
