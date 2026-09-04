@@ -32,8 +32,21 @@ export interface ResolutionInput {
   flags?: Iterable<string>;
   /** Base values a system module establishes before any effect applies. */
   bases?: Readonly<Record<string, number>>;
+  /**
+   * What each proficiency rank contributes, exposed to formulas as
+   * `prof.<target>`. Keeping this in the module rather than the engine is what
+   * lets a system define expertise as double, or as +3, or not have it at all.
+   */
+  proficiencyScale?: Readonly<Record<ProficiencyLevel, number>>;
   effects: readonly BoundEffect[];
 }
+
+const DEFAULT_PROFICIENCY_SCALE: Record<ProficiencyLevel, number> = {
+  none: 0,
+  half: 0.5,
+  proficient: 1,
+  expertise: 2,
+};
 
 export interface ProficiencyResult {
   level: ProficiencyLevel;
@@ -108,10 +121,20 @@ class Resolver implements PredicateScope {
   private readonly numericByTarget = new Map<string, { bound: BoundEffect; active: boolean }[]>();
   private readonly active: BoundEffect[] = [];
 
+  /**
+   * Resolved eagerly in the constructor. Proficiency effects carry no formulas,
+   * and their predicates read only facts and flags, so there is nothing to
+   * order and no cycle to risk — which is what lets formulas reference
+   * `prof.<target>` while stats are still resolving.
+   */
+  private readonly proficiencies: Record<string, ProficiencyResult> = {};
+  private readonly proficiencyScale: Readonly<Record<ProficiencyLevel, number>>;
+
   constructor(input: ResolutionInput) {
     this.facts = new Map(Object.entries(input.facts ?? {}));
     this.flags = new Set(input.flags ?? []);
     this.bases = new Map(Object.entries(input.bases ?? {}));
+    this.proficiencyScale = input.proficiencyScale ?? DEFAULT_PROFICIENCY_SCALE;
 
     // Filter by predicate once, up front. Predicates read facts and flags, not
     // derived stats, so this cannot depend on resolution order.
@@ -125,6 +148,29 @@ class Resolver implements PredicateScope {
         if (group) group.push({ bound, active });
         else this.numericByTarget.set(target, [{ bound, active }]);
       }
+
+      if (active && bound.effect.kind === 'proficiency') {
+        const { target, level } = bound.effect;
+        const entry = {
+          sourceId: bound.sourceId,
+          sourceName: bound.sourceName,
+          level,
+          applied: false,
+        };
+        const existing = this.proficiencies[target];
+        if (!existing) {
+          this.proficiencies[target] = { level, trace: [entry] };
+        } else {
+          existing.trace.push(entry);
+          if (PROFICIENCY_RANK[level] > PROFICIENCY_RANK[existing.level]) existing.level = level;
+        }
+      }
+    }
+
+    // Mark winners once every source has been seen.
+    for (const result of Object.values(this.proficiencies)) {
+      const winner = result.trace.find((entry) => entry.level === result.level);
+      if (winner) winner.applied = true;
     }
   }
 
@@ -139,6 +185,16 @@ class Resolver implements PredicateScope {
     if (this.numericByTarget.has(path) || this.bases.has(path)) {
       return this.resolveStat(path).value;
     }
+
+    // `prof.<target>` yields the scaled contribution of the resolved rank, so a
+    // module can write `attr.dex.mod + prof.skill.stealth * proficiency_bonus`
+    // without the engine ever knowing what a skill is.
+    if (path.startsWith('prof.')) {
+      const target = path.slice('prof.'.length);
+      const level = this.proficiencies[target]?.level ?? 'none';
+      return this.proficiencyScale[level];
+    }
+
     return undefined;
   }
 
@@ -250,7 +306,6 @@ class Resolver implements PredicateScope {
       stats[target] = this.resolveStat(target);
     }
 
-    const proficiencies: Record<string, ProficiencyResult> = {};
     const advantage: Record<string, TraceEntry[]> = {};
     const disadvantage: Record<string, TraceEntry[]> = {};
     const damageResponses: Record<string, DamageResponse> = {};
@@ -270,27 +325,10 @@ class Resolver implements PredicateScope {
       const { effect } = bound;
 
       switch (effect.kind) {
+        // Both resolved eagerly in the constructor.
         case 'numeric':
+        case 'proficiency':
           break;
-
-        case 'proficiency': {
-          const existing = proficiencies[effect.target];
-          const entry = {
-            sourceId: bound.sourceId,
-            sourceName: bound.sourceName,
-            level: effect.level,
-            applied: false,
-          };
-          if (!existing) {
-            proficiencies[effect.target] = { level: effect.level, trace: [entry] };
-          } else {
-            existing.trace.push(entry);
-            if (PROFICIENCY_RANK[effect.level] > PROFICIENCY_RANK[existing.level]) {
-              existing.level = effect.level;
-            }
-          }
-          break;
-        }
 
         case 'roll-bias': {
           const bucket = effect.bias === 'advantage' ? advantage : disadvantage;
@@ -348,20 +386,9 @@ class Resolver implements PredicateScope {
       }
     }
 
-    // Mark the winning proficiency entries now that every source has been seen.
-    for (const result of Object.values(proficiencies)) {
-      let marked = false;
-      for (const entry of result.trace) {
-        if (!marked && entry.level === result.level) {
-          entry.applied = true;
-          marked = true;
-        }
-      }
-    }
-
     return {
       stats,
-      proficiencies,
+      proficiencies: this.proficiencies,
       advantage,
       disadvantage,
       damageResponses,

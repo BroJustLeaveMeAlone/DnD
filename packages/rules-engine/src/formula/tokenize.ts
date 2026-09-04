@@ -37,7 +37,17 @@ const OPERATORS = ['<=', '>=', '==', '!=', '+', '-', '*', '/', '%', '<', '>'] as
 
 const isDigit = (c: string) => c >= '0' && c <= '9';
 const isIdentStart = (c: string) => (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c === '_';
-const isIdentPart = (c: string) => isIdentStart(c) || isDigit(c) || c === '-';
+
+/**
+ * Hyphens are deliberately NOT identifier characters. Allowing them would make
+ * `level-1` ambiguous between subtraction and a reference named `level-1`, and
+ * the reference reading wins silently — a user typing `level-1` in the formula
+ * editor would get an unknown-reference instead of arithmetic.
+ *
+ * Content keys are kebab-case slugs, so formula paths use underscores:
+ * `skill.sleight_of_hand`, not `skill.sleight-of-hand`.
+ */
+const isIdentPart = (c: string) => isIdentStart(c) || isDigit(c);
 
 export function tokenize(source: string): Token[] {
   if (source.length > MAX_FORMULA_LENGTH) {
@@ -105,11 +115,7 @@ export function tokenize(source: string): Token[] {
         }
         break;
       }
-      const text = source.slice(start, i);
-      if (text.endsWith('-')) {
-        throw new FormulaSyntaxError(`Identifier \`${text}\` may not end with '-'`, source, start);
-      }
-      tokens.push({ kind: 'ident', text, pos: start });
+      tokens.push({ kind: 'ident', text: source.slice(start, i), pos: start });
       continue;
     }
 

@@ -9,15 +9,15 @@ Design intent and full scope live in [PLAN.md](./PLAN.md) — this file tracks e
 
 ## Current Status
 
-|                  |                                                                                                                                                                 |
-| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Active arc**   | Arc 1 — Foundation                                                                                                                                              |
-| **Active phase** | Phase 1 — Rules engine core                                                                                                                                     |
-| **Status**       | Complete                                                                                                                                                        |
-| **Summary**      | Formula DSL, predicates, effect vocabulary, stacking, provenance, resolution pipeline. **146 tests** across the workspace, 117 in the engine. Build + DB green. |
-| **Caveats**      | OAuth sign-in round-trip still untested (no provider credentials registered).                                                                                   |
-| **Repo**         | https://github.com/BroJustLeaveMeAlone/DnD                                                                                                                      |
-| **Next up**      | Phase 2 — 5e system modules (2014 + 2024 as independent data modules)                                                                                           |
+|                  |                                                                                                                                                      |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Active arc**   | Arc 1 — Foundation                                                                                                                                   |
+| **Active phase** | Phase 2 — 5e system modules                                                                                                                          |
+| **Status**       | Complete                                                                                                                                             |
+| **Summary**      | 2014 and 2024 encoded as independent data modules. **172 tests** across the workspace. The engine needed no 5e special case — the central bet holds. |
+| **Caveats**      | Vertical slice only — bulk SRD ingestion still to come. OAuth sign-in round-trip still untested (no provider credentials).                           |
+| **Repo**         | https://github.com/BroJustLeaveMeAlone/DnD                                                                                                           |
+| **Next up**      | Phase 2 — 5e system modules (2014 + 2024 as independent data modules)                                                                                |
 
 ---
 
@@ -27,11 +27,11 @@ Statuses: `Not started` · `In progress` · `Complete` · `Blocked`
 
 ### Arc 1 — Foundation
 
-| #   | Phase             | Status       | Notes                                                                        |
-| --- | ----------------- | ------------ | ---------------------------------------------------------------------------- |
-| 0   | Foundations       | **Complete** | Monorepo, schemas, Postgres + Drizzle, auth, CI, Docker Compose              |
-| 1   | Rules engine core | **Complete** | Generic from day one. Proven by a golden suite with zero 5e concepts in it   |
-| 2   | 5e system modules | Not started  | 2014 + 2024 as independent data modules. The forcing function for generality |
+| #   | Phase             | Status       | Notes                                                                      |
+| --- | ----------------- | ------------ | -------------------------------------------------------------------------- |
+| 0   | Foundations       | **Complete** | Monorepo, schemas, Postgres + Drizzle, auth, CI, Docker Compose            |
+| 1   | Rules engine core | **Complete** | Generic from day one. Proven by a golden suite with zero 5e concepts in it |
+| 2   | 5e system modules | **Complete** | Vertical slice of both editions. Engine needed no 5e special case          |
 
 ### Arc 2 — The 5e Product
 
@@ -156,6 +156,55 @@ Statuses: `Not started` · `In progress` · `Complete` · `Blocked`
   wiring lands with Phase 9.
 - Resistance/vulnerability **cancellation** is not modelled. The engine reports the strongest
   response present; whether they annul each other is a per-system rules question.
+
+---
+
+## Phase 2 — 5e System Modules (Complete)
+
+**Goal:** encode 2014 and 2024 independently, and prove the engine needs no 5e special case.
+
+### Delivered
+
+- [x] `SystemModule` type in the engine — attributes, derived stats, entities, grants. Generic.
+- [x] `compile(module, build)` — turns a character's _decisions_ into engine input
+- [x] `packages/systems-dnd5e` with **two independent modules** sharing only authoring helpers
+- [x] Vertical slice each: 3 species, 2 backgrounds, 2 classes + subclasses, feats, armour,
+      weapons, magic items, spells, conditions
+- [x] **25 module tests**, over half of them asserting edition _differences_
+
+### Edition differences encoded (the forcing function)
+
+| Difference               | 2014                   | 2024                       |
+| ------------------------ | ---------------------- | -------------------------- |
+| Ability increases        | Species (human +1 all) | Background (+2/+1)         |
+| Background feat          | none                   | yes                        |
+| Weapon mastery           | absent                 | present, scales with level |
+| Dwarf speed / darkvision | 25 ft / 60 ft          | 30 ft / 120 ft             |
+| Wizard prepared spells   | INT + level            | fixed table                |
+| Exhaustion               | six-rung ladder        | one scaling penalty        |
+| Second Wind uses         | 1                      | 2, then 3                  |
+
+**The engine was not modified to accommodate either edition.** Every difference is data.
+
+### Bugs found by the post-phase review
+
+- **Ability score increases never reached modifiers.** `compile` derived `attr.X.mod` from the raw
+  chosen score before effects ran, so species and background increases landed on a stat nobody
+  read. Silent — the sheet looked plausible and every derived value was wrong. Scores are now
+  bases, and modifiers derive from the resolved score.
+- **`save.all` was referenced by all six save formulas but never declared.** Any character without
+  a Ring of Protection got six unknown-reference diagnostics and zeroed saves — the common case
+  was broken, the exotic one worked.
+- **Chain mail emitted duplicate effects** for a wearer with Strength below 13.
+- **Hyphens in formula identifiers made `level-1` ambiguous** and silently parse as a reference
+  instead of subtraction. Hyphens are now banned from identifiers; paths use underscores.
+
+### Deliberately deferred
+
+- Bulk SRD ingestion. Structured CC-BY datasets exist, so this becomes a mapping-and-verification
+  job rather than transcription.
+- `buildSheet` resolves twice to discover `state` grants (armour category, shield) that later
+  predicates read. It works and is cheap, but a single-pass design would be cleaner.
 
 ### Phase 0 exit criteria
 

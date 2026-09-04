@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+﻿import { describe, expect, it } from 'vitest';
 import { type BoundEffect, type Effect, bind } from './effect.js';
 import { Formula } from './formula/index.js';
 import { type Predicate, always, expression, flag } from './predicate.js';
@@ -9,10 +9,10 @@ import { formatTrace } from './stacking.js';
  * Golden tests. Known inputs mapped to expected derived output.
  *
  * These are the engine's safety net: every rules bug found later becomes a
- * permanent case here. See PLAN.md §17.
+ * permanent case here. See PLAN.md Â§17.
  *
  * The second suite matters as much as the first. It builds a system with no 5e
- * concepts in it at all — no abilities, no AC, no spell slots, no levels — and
+ * concepts in it at all â€” no abilities, no AC, no spell slots, no levels â€” and
  * runs it through the same engine. If that ever needs a special case, the
  * central architectural bet has been lost.
  */
@@ -105,7 +105,7 @@ describe('golden: the AC example from PLAN.md', () => {
 
 describe('golden: a system with no 5e concepts in it', () => {
   /**
-   * Jujutsu Kaisen, per PLAN.md §2. Attributes, progression, resources, and
+   * Jujutsu Kaisen, per PLAN.md Â§2. Attributes, progression, resources, and
    * powers are all replaced; nothing here is an ability score, an AC, a spell
    * slot, or a class level. Grades are a named progression track, cursed energy
    * is a flat pool, and the technique is character-scoped content.
@@ -114,7 +114,7 @@ describe('golden: a system with no 5e concepts in it', () => {
 
   const sheet = resolve({
     facts: {
-      'attr.cursed-energy.raw': 42,
+      'attr.cursed_energy.raw': 42,
       'attr.body.raw': 30,
       'grade.rank': GRADES.indexOf('grade-1'),
     },
@@ -123,18 +123,18 @@ describe('golden: a system with no 5e concepts in it', () => {
       // Attributes derive from raw values on a curve this system invented.
       from(
         'Cursed Energy',
-        numeric('attr.cursed-energy', 'set', 'floor(attr.cursed-energy.raw / 3)'),
+        numeric('attr.cursed_energy', 'set', 'floor(attr.cursed_energy.raw / 3)'),
       ),
       from('Body', numeric('attr.body', 'set', 'floor(attr.body.raw / 3)')),
 
       // Progression is a named rank, and it feeds the resource pool.
-      from('Grade', numeric('output', 'set', 'attr.cursed-energy * (grade.rank + 1)')),
+      from('Grade', numeric('output', 'set', 'attr.cursed_energy * (grade.rank + 1)')),
 
       // A flat pool, not tiered slots.
       from('Cursed Energy Pool', {
         kind: 'resource',
-        target: 'cursed-energy',
-        max: f('attr.cursed-energy * 10 + grade.rank * 5'),
+        target: 'cursed_energy',
+        max: f('attr.cursed_energy * 10 + grade.rank * 5'),
         recharge: 'long-rest',
       }),
 
@@ -168,12 +168,12 @@ describe('golden: a system with no 5e concepts in it', () => {
   });
 
   it('derives custom attributes with no ability scores anywhere', () => {
-    expect(sheet.stats['attr.cursed-energy']?.value).toBe(14);
+    expect(sheet.stats['attr.cursed_energy']?.value).toBe(14);
   });
 
   it('computes a resource pool from a custom progression track', () => {
     // 14 * 10 + 3 * 5
-    expect(sheet.resources['cursed-energy']?.max).toBe(155);
+    expect(sheet.resources['cursed_energy']?.max).toBe(155);
   });
 
   it('applies a domain expansion as a conditional bonus', () => {
@@ -201,14 +201,14 @@ describe('golden: a system with no 5e concepts in it', () => {
 
   it('closes the domain and the bonus goes away', () => {
     const closed = resolve({
-      facts: { 'attr.cursed-energy.raw': 42, 'grade.rank': 3 },
+      facts: { 'attr.cursed_energy.raw': 42, 'grade.rank': 3 },
       flags: [],
       effects: [
         from(
           'Cursed Energy',
-          numeric('attr.cursed-energy', 'set', 'floor(attr.cursed-energy.raw / 3)'),
+          numeric('attr.cursed_energy', 'set', 'floor(attr.cursed_energy.raw / 3)'),
         ),
-        from('Grade', numeric('output', 'set', 'attr.cursed-energy * (grade.rank + 1)')),
+        from('Grade', numeric('output', 'set', 'attr.cursed_energy * (grade.rank + 1)')),
         from('Domain: Infinite Void', numeric('output', 'add', 20), flag('domain-active')),
       ],
     });

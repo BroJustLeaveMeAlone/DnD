@@ -25,3 +25,4 @@ export * from './predicate.js';
 export * from './effect.js';
 export * from './stacking.js';
 export * from './resolve.js';
+export * from './module.js';

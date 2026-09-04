@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+﻿import { describe, expect, it } from 'vitest';
 import { Formula, FormulaEvaluationError, FormulaSyntaxError, type FormulaScope } from './index.js';
 
 const scope = (values: Record<string, number | boolean>): FormulaScope => ({
@@ -30,8 +30,16 @@ describe('references', () => {
     expect(evaluate('10 + attr.dex.mod + prof', { 'attr.dex.mod': 3, prof: 2 })).toBe(15);
   });
 
-  it('allows hyphens in path segments so slugs work as keys', () => {
-    expect(evaluate('resource.cursed-energy.max', { 'resource.cursed-energy.max': 40 })).toBe(40);
+  it('uses underscores in path segments, not hyphens', () => {
+    expect(evaluate('resource.cursed_energy.max', { 'resource.cursed_energy.max': 40 })).toBe(40);
+  });
+
+  it('parses `level-1` as subtraction, not as an identifier', () => {
+    // The reason hyphens are banned from identifiers. If `-` were an identifier
+    // character this would silently become an unknown reference instead of
+    // arithmetic, which is a trap in a user-facing formula editor.
+    expect(evaluate('level-1', { level: 5 })).toBe(4);
+    expect(evaluate('level -1', { level: 5 })).toBe(4);
   });
 
   it('throws on an unknown reference by default', () => {
@@ -132,7 +140,7 @@ describe('sandbox', () => {
     'treats `%s` as an ordinary reference with no host access',
     (source) => {
       // These parse as plain reference paths. They resolve to nothing because the
-      // scope has no such key — there is no path from a formula to the host.
+      // scope has no such key â€” there is no path from a formula to the host.
       const formula = Formula.parse(source);
       expect(formula.evaluate(scope({}), { onMissingReference: () => 0 })).toBe(0);
     },

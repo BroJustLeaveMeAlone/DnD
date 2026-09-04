@@ -17,6 +17,11 @@ out/
 .env.*
 !.env.example
 
+# credentials — CREDENTIALS.example.md is committed, the real one never is.
+# This repo is PUBLIC. Anything pushed here is permanently compromised.
+CREDENTIALS.md
+!CREDENTIALS.example.md
+
 # test / coverage
 coverage/
 .vitest/
