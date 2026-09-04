@@ -9,15 +9,15 @@ Design intent and full scope live in [PLAN.md](./PLAN.md) — this file tracks e
 
 ## Current Status
 
-|                  |                                                                                                                                              |
-| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Active arc**   | Arc 3 — Creation                                                                                                                             |
-| **Active phase** | Phase 6 — System Designer                                                                                                                    |
-| **Status**       | Complete                                                                                                                                     |
-| **Summary**      | Per-subsystem dials, custom attributes and derived stats, and a schema-driven sheet. **225 tests**. A cursed-energy system renders natively. |
-| **Caveats**      | No starter kits beyond forking 5e. Designer lacks live formula feedback. OAuth round-trip still untested.                                    |
-| **Repo**         | https://github.com/BroJustLeaveMeAlone/DnD                                                                                                   |
-| **Next up**      | Phase 7 — Linter + probe characters (what makes creation freedom survivable)                                                                 |
+|                  |                                                                                                                           |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| **Active arc**   | Arc 3 — Creation                                                                                                          |
+| **Active phase** | Phase 7 — Linter + probe characters                                                                                       |
+| **Status**       | Complete                                                                                                                  |
+| **Summary**      | Deterministic linter and generated probe characters. **251 tests**. Found a real bug in the 2024 module on its first run. |
+| **Caveats**      | No balance diagnostics yet (that is Phase 15). No starter kits. OAuth round-trip still untested.                          |
+| **Repo**         | https://github.com/BroJustLeaveMeAlone/DnD                                                                                |
+| **Next up**      | Phase 8 — Codex (lore entries cross-linked to real mechanics)                                                             |
 
 ---
 
@@ -48,7 +48,7 @@ Statuses: `Not started` · `In progress` · `Complete` · `Blocked`
 | #   | Phase                     | Status       | Notes                                                           |
 | --- | ------------------------- | ------------ | --------------------------------------------------------------- |
 | 6   | System Designer           | **Complete** | Dials, custom attributes and derived stats, schema-driven sheet |
-| 7   | Linter + probe characters | Not started  | Deterministic. What makes creation freedom survivable           |
+| 7   | Linter + probe characters | **Complete** | Deterministic. Caught a real bug in the 2024 module immediately |
 | 8   | Codex                     | Not started  | Lore entries cross-linked to real mechanics                     |
 
 > **Stopping after Arc 3 ships a creation tool nothing else offers.**
@@ -367,6 +367,46 @@ than reintroducing 5e assumptions into generic code or letting the renderer gues
   but the effect builder's as-you-type validation is not wired in here yet.
 - Removing an attribute that formulas reference degrades with a diagnostic rather than warning
   first. That warning is exactly Phase 7.
+
+---
+
+## Phase 7 — Linter + Probe Characters (Complete)
+
+**Goal:** find broken content at authoring time, before a player does.
+
+### Delivered
+
+- [x] **Static analysis** in the engine — zero dependencies, deterministic, works offline.
+      Ten rules: unknown references, unparseable formulas, duplicate keys, shadowed attributes,
+      undeclared effect targets, unreachable level grants, inert entities, unused attributes.
+- [x] **Probe characters** — one build per class at every level, resolved and checked for
+      non-finite values, runaway magnitudes, and resolution diagnostics
+- [x] `/systems/[slug]/lint` — findings grouped by severity, each linking to the editor that
+      fixes it
+- [x] **20 linter tests**, plus a test asserting **both bundled rulesets lint clean**
+
+### It found a real bug on its first run
+
+The 2024 exhaustion condition referenced `exhaustion.level`, which nothing declared. The predicate
+read the missing reference as 0, so **2024 exhaustion silently never fired** — no error, no
+diagnostic, just a rule that did nothing. This is precisely the failure mode the phase exists for.
+
+Also surfaced: the Wizard's spell attack bonus, save DC, and prepared-spell count computed
+correctly but were never declared, so they rendered nowhere. Now declared, with a rule in
+`AutoSheet` that hides a stat nothing has touched — so a fighter does not see "Spell Save DC 0".
+
+### Review finding
+
+The linter's first run also produced 15 false positives: it treated attribute score paths as
+undeclared because it only consulted `module.derived`. Every species that raises an ability score
+looked broken. Fixed before the rule could train anyone to ignore it.
+
+### Deliberately deferred
+
+- **Balance diagnostics** — damage-per-round and AC curves plotted against 5e baselines. That
+  needs the combat simulator and belongs with Phase 15.
+- The linter runs on demand. Running it automatically on save, and blocking a publish with errors,
+  belongs with the Commons in Phase 12.
 
 ### Phase 0 exit criteria
 

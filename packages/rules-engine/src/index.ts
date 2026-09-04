@@ -27,3 +27,4 @@ export * from './stacking.js';
 export * from './resolve.js';
 export * from './module.js';
 export * from './serialize.js';
+export * from './lint.js';

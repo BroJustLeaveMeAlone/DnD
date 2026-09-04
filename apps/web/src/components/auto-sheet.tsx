@@ -60,6 +60,17 @@ export function AutoSheet({ module, sheet }: { module: SystemModule; sheet: Deri
     return { ...section, keys };
   }).filter((section) => section.keys.length > 0);
 
+  /**
+   * A stat is inert for this character when nothing but its own base ever
+   * touched it. A system declares Spell Save DC so wizards can see it; showing
+   * "Spell Save DC 0" on a fighter is noise, not information.
+   */
+  const isInert = (key: string) => {
+    const derived = sheet.stats[key];
+    if (!derived) return true;
+    return derived.value === 0 && derived.trace.every((entry) => entry.operation === 'base');
+  };
+
   // Everything the module declares that no section claimed. Declared order is
   // the author's order, which is more meaningful than alphabetical.
   const core = module.derived
@@ -69,7 +80,8 @@ export function AutoSheet({ module, sheet }: { module: SystemModule; sheet: Deri
         !attributeKeys.has(key) &&
         !sectioned.has(key) &&
         key !== 'save.all' &&
-        sheet.stats[key] !== undefined,
+        sheet.stats[key] !== undefined &&
+        !isInert(key),
     );
 
   return (

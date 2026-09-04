@@ -374,6 +374,13 @@ export const dnd5e2014: SystemModule = {
     { key: 'attacks', name: 'Attacks per Action', base: 0 },
     { key: 'crit.range', name: 'Critical Range', base: 20, display: { suffix: '+' } },
     { key: 'passive.perception', name: 'Passive Perception', formula: '10 + skill.perception' },
+    // Declared so they reach the sheet. A stat that only ever exists because an
+    // effect targeted it computes correctly but renders nowhere.
+    { key: 'spell.attack', name: 'Spell Attack', base: 0, display: { signed: true } },
+    { key: 'spell.save_dc', name: 'Spell Save DC', base: 0 },
+    { key: 'spell.prepared_max', name: 'Spells Prepared', base: 0 },
+    { key: 'attack.bonus', name: 'Attack Bonus', base: 0, display: { signed: true } },
+    { key: 'damage.melee', name: 'Melee Damage', base: 0, display: { signed: true } },
     ...saveDerivations(),
     ...skillDerivations(),
   ],

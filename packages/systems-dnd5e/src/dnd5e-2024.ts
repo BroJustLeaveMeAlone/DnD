@@ -402,8 +402,16 @@ export const dnd5e2024: SystemModule = {
     { key: 'attacks', name: 'Attacks per Action', base: 0 },
     { key: 'crit.range', name: 'Critical Range', base: 20, display: { suffix: '+' } },
     { key: 'weapon_mastery.count', name: 'Weapon Masteries', base: 0 },
-    { key: 'd20_test', name: 'D20 Test Modifier', base: 0 },
+    { key: 'd20_test', name: 'D20 Test Modifier', base: 0, display: { signed: true } },
+    // Declared so the exhaustion condition's formulas resolve. Without this the
+    // whole 2024 exhaustion rule silently did nothing: the predicate read a
+    // missing reference as 0 and never fired. Caught by the linter.
+    { key: 'exhaustion.level', name: 'Exhaustion', base: 0 },
     { key: 'passive.perception', name: 'Passive Perception', formula: '10 + skill.perception' },
+    // Declared so they reach the sheet. See the 2014 module for why.
+    { key: 'spell.attack', name: 'Spell Attack', base: 0, display: { signed: true } },
+    { key: 'spell.save_dc', name: 'Spell Save DC', base: 0 },
+    { key: 'spell.prepared_max', name: 'Spells Prepared', base: 0 },
     ...saveDerivations(),
     ...skillDerivations(),
   ],
