@@ -17,7 +17,7 @@ Design intent and full scope live in [PLAN.md](./PLAN.md) — this file tracks e
 | **Summary**      | 2014 and 2024 encoded as independent data modules. **172 tests** across the workspace. The engine needed no 5e special case — the central bet holds. |
 | **Caveats**      | Vertical slice only — bulk SRD ingestion still to come. OAuth sign-in round-trip still untested (no provider credentials).                           |
 | **Repo**         | https://github.com/BroJustLeaveMeAlone/DnD                                                                                                           |
-| **Next up**      | Phase 2 — 5e system modules (2014 + 2024 as independent data modules)                                                                                |
+| **Next up**      | Phase 3 — Compendium (browse, search, entity pages, structured queries)                                                                              |
 
 ---
 
