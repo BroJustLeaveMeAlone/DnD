@@ -9,15 +9,15 @@ Design intent and full scope live in [PLAN.md](./PLAN.md) — this file tracks e
 
 ## Current Status
 
-|                  |                                                                                                 |
-| ---------------- | ----------------------------------------------------------------------------------------------- |
-| **Active arc**   | Arc 3 — Creation                                                                                |
-| **Active phase** | Phase 8 — Codex                                                                                 |
-| **Status**       | Complete — **Arc 3 finished**                                                                   |
-| **Summary**      | Lore entries with wiki links, backlinks, and binding to real mechanics. **265 tests**.          |
-| **Caveats**      | Codex is system-scoped; campaign scoping arrives with Phase 9. OAuth round-trip still untested. |
-| **Repo**         | https://github.com/BroJustLeaveMeAlone/DnD                                                      |
-| **Next up**      | Phase 9 — Campaigns & party (Arc 4 begins)                                                      |
+|                  |                                                                                                              |
+| ---------------- | ------------------------------------------------------------------------------------------------------------ |
+| **Active arc**   | Arc 4 — Play                                                                                                 |
+| **Active phase** | Phase 9 — Campaigns & party                                                                                  |
+| **Status**       | Complete                                                                                                     |
+| **Summary**      | Campaigns, invites, roles, party dashboard, and house rules that appear in provenance traces. **284 tests**. |
+| **Caveats**      | House rules edited as raw JSON — no builder UI yet. OAuth round-trip still untested.                         |
+| **Repo**         | https://github.com/BroJustLeaveMeAlone/DnD                                                                   |
+| **Next up**      | Phase 10 — Dice + combat tracker                                                                             |
 
 ---
 
@@ -55,11 +55,11 @@ Statuses: `Not started` · `In progress` · `Complete` · `Blocked`
 
 ### Arc 4 — Play
 
-| #   | Phase                 | Status      | Notes                                                   |
-| --- | --------------------- | ----------- | ------------------------------------------------------- |
-| 9   | Campaigns & party     | Not started | Roles, dashboard, GM tools, house rules, party analysis |
-| 10  | Dice + combat tracker | Not started | Standalone-usable for in-person tables                  |
-| 11  | VTT                   | Not started | Largest risk item. Roughly doubles the project          |
+| #   | Phase                 | Status       | Notes                                                  |
+| --- | --------------------- | ------------ | ------------------------------------------------------ |
+| 9   | Campaigns & party     | **Complete** | Roles, invites, party dashboard, house rules in traces |
+| 10  | Dice + combat tracker | Not started  | Standalone-usable for in-person tables                 |
+| 11  | VTT                   | Not started  | Largest risk item. Roughly doubles the project         |
 
 ### Arc 5 — Community & Depth
 
@@ -440,6 +440,43 @@ through a renderer chosen for its escaping rather than its feature list.
 - The Codex is **system-scoped**. Campaign-scoped lore, DM-private notes, and reveal-to-players
   mechanics need campaigns, which is Phase 9.
 - No timelines or calendars yet.
+
+---
+
+## Phase 9 — Campaigns & Party (Complete)
+
+**Goal:** a table, with roles, a party view, and rules the GM can bend.
+
+### Delivered
+
+- [x] Campaigns with **membership-scoped** reads — a player is not the owner but must still see the
+      party, so authorisation is membership in the WHERE clause, never a prior read
+- [x] **Invite tokens**, rotatable. Rotating invalidates every link previously handed out, which is
+      the only way to un-invite someone who shared one. Only the GM ever sees the token.
+- [x] Roles (gm / player / spectator), with **the last GM protected** from demotion and removal —
+      a campaign nobody can administer is unrecoverable through the UI
+- [x] **Party dashboard** resolving every member's sheet against the campaign's ruleset
+- [x] **House rules as ordinary effects**, bound to the campaign as their source — so a capped AC
+      shows "Campaign house rule" in the provenance trace rather than silently disagreeing with the
+      book
+- [x] **19 campaign tests**, mostly authorisation edge cases
+
+### Invariants worth naming
+
+- The campaign creator is inserted as a **GM member**, not merely recorded as owner. Otherwise
+  every membership-scoped read would exclude them from their own table.
+- Joining is **idempotent** — following an invite twice must not fail, and must never demote a GM
+  who clicks their own link.
+- A character must belong to the assigning user **and** to the campaign's system. A mismatched
+  character would be resolved against the wrong ruleset on the dashboard.
+- A malformed house rule is skipped rather than throwing, so one bad rule cannot take down the
+  whole party view.
+
+### Deliberately deferred
+
+- House rules are edited as **raw JSON**. The effect builder from Phase 5 should be reused here;
+  it needs a mode that is not tied to an entity.
+- No session log, quest tracker, or shared party inventory yet.
 
 ### Phase 0 exit criteria
 

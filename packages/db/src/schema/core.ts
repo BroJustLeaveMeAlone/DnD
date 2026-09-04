@@ -204,6 +204,13 @@ export const campaigns = pgTable(
       .notNull()
       .default(sql`'[]'::jsonb`),
 
+    /**
+     * Bearer token for the join link. Rotating it invalidates every link
+     * previously handed out, which is the only way to un-invite someone who
+     * shared it.
+     */
+    inviteToken: text('invite_token').unique(),
+
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },

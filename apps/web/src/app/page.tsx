@@ -25,12 +25,21 @@ export default async function Home() {
           Browse the compendium
         </Link>
         {session?.user ? (
-          <Link
-            href="/characters"
-            className="inline-block rounded-md border border-neutral-300 px-4 py-2 text-sm font-medium hover:bg-neutral-100 dark:border-neutral-700 dark:hover:bg-neutral-800"
-          >
-            My characters
-          </Link>
+          <>
+            {[
+              ['/characters', 'Characters'],
+              ['/campaigns', 'Campaigns'],
+              ['/systems', 'Systems'],
+            ].map(([href, label]) => (
+              <Link
+                key={href}
+                href={href!}
+                className="inline-block rounded-md border border-neutral-300 px-4 py-2 text-sm font-medium hover:bg-neutral-100 dark:border-neutral-700 dark:hover:bg-neutral-800"
+              >
+                {label}
+              </Link>
+            ))}
+          </>
         ) : (
           isDevelopment && (
             <form action={devSignIn}>
