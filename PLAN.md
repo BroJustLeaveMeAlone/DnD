@@ -197,6 +197,21 @@ Entity types modeled: Species and lineages · Backgrounds · Classes · Subclass
 - **Structured queries** — because content is data, not licensed text: "every spell granting advantage on saves," "every item scaling with proficiency." D&D Beyond structurally cannot do this.
 - Seeded from SRD 5.1 and SRD 5.2.1 (both CC-BY-4.0)
 
+### Full SRD ingestion — Phase 11
+
+The bulk data job, and the hidden cost sitting on the critical path. Both editions, complete.
+
+- **Classes** — all twelve, levels 1–20, with subclasses. The hardest part: each level's features are grants, effects, choices, and resources, not prose.
+- **Species, backgrounds, feats** — including 2024 background feats and origin feats
+- **Spells** — the full list, with preparation models, slot progression, and upcasting
+- **Items** — weapons with properties and 2024 masteries, armour, tools, magic items
+- **Monsters** — statblocks carrying the actions and traits the combat tracker consumes
+- **Conditions, damage types, rules glossary**
+
+**Ingest, do not transcribe.** The SRD is CC-BY-4.0, so well-maintained structured datasets of it already exist and are legally usable with attribution. Writing mappers into the entity schema turns this from typing into mapping and verification. The mechanically interesting entries — Shield, Bless, Unarmored Defense, Wild Shape — still need effect encoding by hand, because no dataset carries mechanics in this schema's shape.
+
+**Expect it to break things, and treat that as the point.** Everything built so far is validated against roughly 25 entities per edition. Full content will surface modelling gaps: multiclass slot tables, prepared versus known casting, choices that depend on earlier choices. Better found here than after a virtual tabletop has been built on the assumptions.
+
 ---
 
 ## 5. Character Builder & Sheet
@@ -454,6 +469,32 @@ Guardrails:
 
 ---
 
+## 19. Product Design — Phase 12
+
+The product's own visual identity. Added after phase 10, because the original nineteen phases had
+no section that owned it: §10 Studio is tooling for _users_ to design their content, and the launch
+polish is accessibility and internationalisation. Neither is "make this look like a product."
+
+Numbered 19 and placed here rather than inserted near §10, because the existing section numbers are
+referenced from about thirty code comments. Stable numbering is worth more than tidy ordering.
+
+- **Typography and colour** — a real type scale and palette that works in light and dark, meeting
+  contrast requirements by construction rather than by later audit
+- **Component system** — buttons, fields, cards, tables, dialogs, defined once
+- **The character sheet as a designed artefact**, not a grid of boxes. It is where people spend
+  their time, and the provenance trace is the thing worth designing around.
+- **Density and hierarchy** — a sheet carries a lot of information, and the current layout treats
+  every number as equally important, which means none of them are
+- **Mobile-first**, because most real use is a phone at a table
+- **A distinct identity.** The product's whole claim is that it lets you build your own thing. It
+  should not look like a template.
+
+**Why it follows content rather than preceding it.** A sheet designed around 25 entities and one
+designed around four hundred spells are different designs. Designing against thin content means
+doing the work twice.
+
+---
+
 ## Work Order
 
 Each phase should leave the product working and demoable.
@@ -488,19 +529,40 @@ Each phase should leave the product working and demoable.
 | --- | --------------------- | ------------------------------------------------------------------------------- |
 | 9   | Campaigns & party     | Roles, dashboard, GM tools, house rules, party analysis                         |
 | 10  | Dice + combat tracker | Dice engine, initiative, conditions, concentration, encounter builder, realtime |
-| 11  | VTT                   | Maps, tokens, fog, lighting, vision, sheet integration, live sync               |
 
-### Arc 5 — Community & Depth
+### Arc 5 — Substance
+
+Everything before this point is mechanism. This arc is what turns a working prototype into a
+product someone would choose to use.
+
+| #   | Phase         | Contents                                                                  |
+| --- | ------------- | ------------------------------------------------------------------------- |
+| 11  | SRD content   | Both editions encoded in full — classes, species, spells, items, monsters |
+| 12  | Visual design | Typography, colour, layout, component system, a real character sheet      |
+
+### Arc 6 — The Virtual Table
+
+| #   | Phase | Contents                                                          |
+| --- | ----- | ----------------------------------------------------------------- |
+| 13  | VTT   | Maps, tokens, fog, lighting, vision, sheet integration, live sync |
+
+### Arc 7 — Community & Depth
 
 | #   | Phase              | Contents                                                                 |
 | --- | ------------------ | ------------------------------------------------------------------------ |
-| 12  | The Commons        | Publishing, forking, attribution chains, licensing, curation, moderation |
-| 13  | Offline & PWA      | Service worker, IndexedDB, sync, conflict resolution                     |
-| 14  | Import & export    | Native JSON, DDB import, VTT exports, PDF ingestion, sourcebook export   |
-| 15  | Playtest simulator | Combat simulation, balance curves against 5e baselines                   |
-| 16  | Studio             | Map editor, token composer, card and statblock designers, theming        |
-| 17  | AI layer           | Optional BYOK: scaffolding, bulk drafting, consistency audit             |
-| 18  | Polish & launch    | Accessibility audit, i18n, onboarding, self-host packaging, legal review |
+| 14  | The Commons        | Publishing, forking, attribution chains, licensing, curation, moderation |
+| 15  | Offline & PWA      | Service worker, IndexedDB, sync, conflict resolution                     |
+| 16  | Import & export    | Native JSON, DDB import, VTT exports, PDF ingestion, sourcebook export   |
+| 17  | Playtest simulator | Combat simulation, balance curves against 5e baselines                   |
+| 18  | Studio             | Map editor, token composer, card and statblock designers, theming        |
+| 19  | AI layer           | Optional BYOK: scaffolding, bulk drafting, consistency audit             |
+| 20  | Polish & launch    | Accessibility audit, i18n, onboarding, self-host packaging, legal review |
+
+**Renumbering.** Phases 11 and 12 were inserted after phase 10 was already complete, so 0–10 keep
+their original numbers and everything from the VTT onward shifted by two. The original plan had no
+phase that owned the product's own visual identity — it had Studio, which is tooling for _users_ to
+design things, and Polish, which is accessibility and i18n. Neither is "make this look like a
+product." That was a genuine omission.
 
 **Note:** the _engine_ is generic from phase 1 — non-negotiable, non-retrofittable. Phase 6 adds the authoring UI. Building 2014 and 2024 as two independent modules in phase 2 is the forcing function proving that generality is real long before anyone builds a new world in it.
 

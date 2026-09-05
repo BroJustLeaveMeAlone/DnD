@@ -9,15 +9,15 @@ Design intent and full scope live in [PLAN.md](./PLAN.md) — this file tracks e
 
 ## Current Status
 
-|                  |                                                                                      |
-| ---------------- | ------------------------------------------------------------------------------------ |
-| **Active arc**   | Arc 4 — Play                                                                         |
-| **Active phase** | Phase 10 — Dice + combat tracker                                                     |
-| **Status**       | Complete                                                                             |
-| **Summary**      | Dice, combat tracker, realtime sync, and the full OAuth sign-in flow. **371 tests**. |
-| **Caveats**      | OAuth needs provider credentials to test the redirect. House rules still raw JSON.   |
-| **Repo**         | https://github.com/BroJustLeaveMeAlone/DnD                                           |
-| **Next up**      | Phase 11 — VTT (largest risk item; roughly doubles the project)                      |
+|                  |                                                                                                  |
+| ---------------- | ------------------------------------------------------------------------------------------------ |
+| **Active arc**   | Arc 5 — Substance                                                                                |
+| **Active phase** | Phase 11 — SRD content (starting)                                                                |
+| **Status**       | Arc 4 complete; between-phase work closed out                                                    |
+| **Summary**      | Ten phases done. **371 tests**, CI green. Sign-in, realtime sync, and campaign play all working. |
+| **Caveats**      | Content is a vertical slice — that is what Phase 11 fixes. House rules still edited as raw JSON. |
+| **Repo**         | https://github.com/BroJustLeaveMeAlone/DnD                                                       |
+| **Next up**      | Phase 11 — both SRD editions in full, then Phase 12 visual design                                |
 
 ---
 
@@ -59,19 +59,38 @@ Statuses: `Not started` · `In progress` · `Complete` · `Blocked`
 | --- | --------------------- | ------------ | ------------------------------------------------------ |
 | 9   | Campaigns & party     | **Complete** | Roles, invites, party dashboard, house rules in traces |
 | 10  | Dice + combat tracker | **Complete** | Dice notation, pure transitions, initiative tracker    |
-| 11  | VTT                   | Not started  | Largest risk item. Roughly doubles the project         |
 
-### Arc 5 — Community & Depth
+### Arc 5 — Substance
+
+Everything before this is mechanism. This arc is what turns a working prototype into something
+someone would choose to use.
+
+| #   | Phase         | Status      | Notes                                                                |
+| --- | ------------- | ----------- | -------------------------------------------------------------------- |
+| 11  | SRD content   | Not started | Both editions in full. The bulk data job flagged from the start      |
+| 12  | Visual design | Not started | The product's own look. See PLAN.md §19 for why this phase was added |
+
+### Arc 6 — The Virtual Table
+
+| #   | Phase | Status      | Notes                                          |
+| --- | ----- | ----------- | ---------------------------------------------- |
+| 13  | VTT   | Not started | Largest risk item. Roughly doubles the project |
+
+### Arc 7 — Community & Depth
 
 | #   | Phase              | Status      | Notes                                                                  |
 | --- | ------------------ | ----------- | ---------------------------------------------------------------------- |
-| 12  | The Commons        | Not started | Publishing, forking, attribution chains, licensing, moderation         |
-| 13  | Offline & PWA      | Not started | Service worker, IndexedDB, sync, conflict resolution                   |
-| 14  | Import & export    | Not started | Native JSON, DDB import, VTT exports, PDF ingestion, sourcebook export |
-| 15  | Playtest simulator | Not started | Combat simulation, balance curves vs. 5e baselines                     |
-| 16  | Studio             | Not started | Map editor, token composer, card/statblock designers, theming          |
-| 17  | AI layer           | Not started | Optional BYOK. Drafts and organizes; never verifies                    |
-| 18  | Polish & launch    | Not started | Accessibility, i18n, onboarding, self-host packaging, legal review     |
+| 14  | The Commons        | Not started | Publishing, forking, attribution chains, licensing, moderation         |
+| 15  | Offline & PWA      | Not started | Service worker, IndexedDB, sync, conflict resolution                   |
+| 16  | Import & export    | Not started | Native JSON, DDB import, VTT exports, PDF ingestion, sourcebook export |
+| 17  | Playtest simulator | Not started | Combat simulation, balance curves vs. 5e baselines                     |
+| 18  | Studio             | Not started | Map editor, token composer, card/statblock designers, theming          |
+| 19  | AI layer           | Not started | Optional BYOK. Drafts and organizes; never verifies                    |
+| 20  | Polish & launch    | Not started | Accessibility, i18n, onboarding, self-host packaging, legal review     |
+
+> **Renumbering.** Phases 11 and 12 were inserted after phase 10 was complete. Phases 0–10 keep
+> their original numbers so every reference in this file and in code comments stays valid; the VTT
+> and everything after it shifted by two.
 
 ---
 
@@ -124,6 +143,17 @@ Statuses: `Not started` · `In progress` · `Complete` · `Blocked`
 - [x] **CI verified green** on Node 24 against a real Postgres service container.
       First run failed: `pnpm/action-setup` rejects a `version` input when
       `packageManager` is set in package.json. Fixed by dropping the input.
+
+### Phase 0 exit criteria
+
+- [x] `pnpm install` succeeds
+- [x] `pnpm run format:check` passes
+- [x] `pnpm run lint` passes
+- [x] `pnpm run typecheck` passes
+- [x] `pnpm run test` passes — 28 tests
+- [x] `pnpm run build` passes — 4 routes
+- [x] `docker compose up` brings up Postgres; migrations apply
+- [x] Web app boots; `/api/health` returns `{"status":"ok"}` with `database: ok`
 
 ---
 
@@ -521,7 +551,15 @@ through a renderer chosen for its escaping rather than its feature list.
 
 ---
 
-## Phase 10.5 — Realtime Sync (Complete)
+---
+
+## Between-phase work
+
+Work that does not belong to a numbered phase: caveats closed, defects fixed, and repository
+changes. Recorded here so it is part of the project's history rather than something that happened
+in a conversation and was forgotten.
+
+### Realtime sync — after Phase 10
 
 **Goal:** players see the combat tracker and party dashboard change without refreshing.
 
@@ -578,16 +616,97 @@ cleanup — a leak there would exhaust the connection limit during a busy sessio
   that lands during a reconnect is missed — harmless here because the refresh is idempotent and the
   next event re-syncs, but it would matter for an append-only feed.
 
-### Phase 0 exit criteria
+---
 
-- [x] `pnpm install` succeeds
-- [x] `pnpm run format:check` passes
-- [x] `pnpm run lint` passes
-- [x] `pnpm run typecheck` passes
-- [x] `pnpm run test` passes — 28 tests
-- [x] `pnpm run build` passes — 4 routes
-- [x] `docker compose up` brings up Postgres; migrations apply
-- [x] Web app boots; `/api/health` returns `{"status":"ok"}` with `database: ok`
+### OAuth sign-in — after Phase 10
+
+**Goal:** close out the standing caveat that no real sign-in path existed.
+
+### Delivered
+
+- [x] `/signin` page that reads which providers actually have credentials and offers exactly
+      those. A button for an unregistered provider only leads to a broken callback, and that error
+      is far more confusing than an absent button.
+- [x] Auth.js error codes translated into messages that name the likely cause. The stock
+      "Try signing in with a different account" is useless when the real problem is a callback URL
+      typo in a provider console.
+- [x] `callbackUrl` restricted to relative paths, so a crafted link cannot bounce someone to
+      another origin carrying a freshly minted session.
+- [x] One sign-out path through Auth.js, which deletes the session row rather than only clearing
+      the cookie — a stolen cookie stops working. It covers the development session too, so the
+      duplicate `devSignOut` was removed.
+- [x] Provider setup instructions, including exact callback URLs, in `CREDENTIALS.example.md`.
+
+### Verified live
+
+Against a booted production server with no providers configured: `/signin` renders and explains
+the absence; `/api/auth/providers` agrees; `?error=OAuthCallback` produces the
+callback-mismatch explanation; an absolute `callbackUrl` is rejected; a signed-in visitor is
+redirected away rather than offered sign-in again.
+
+### GitHub added as the working provider
+
+Discord was attempted first and **blocked** — its developer portal demands an email already
+registered to another account. GitHub needs no consent screen, no verification, and reuses the
+account that owns this repo. Adding it was a five-line change, which is the payoff for the
+conditional-provider design.
+
+Google remains unwired: it needs a configured consent screen plus explicitly listed test users
+while unpublished, and refuses plain `http://` redirects for any host but `localhost`.
+
+### Verified against the real provider
+
+A registered GitHub app is now in `.env`. Confirmed against a booted server: Auth.js advertises the
+provider, the sign-in page offers it, and `POST /api/auth/signin/github` returns a 302 to
+`github.com/login/oauth/authorize` carrying the correct `client_id`, a `redirect_uri` matching the
+registered one exactly, and scope `read:user user:email`. **GitHub accepted the client id** rather
+than serving an error, which it would do for an unregistered or mismatched app.
+
+`state` is absent from the authorize URL, and that is correct rather than a gap: Auth.js uses
+**PKCE** (`code_challenge` with `S256`, verifier in an encrypted cookie) for this provider. Checked
+explicitly, because a missing CSRF check would be easy to wave past.
+
+### Round-trip completed
+
+A real GitHub account went through the consent screen and landed back signed in. Confirmed in the
+database rather than by looking at the page:
+
+- an `accounts` row with `provider = github`, `type = oauth`, scope `read:user,user:email`
+- `providerAccountId` matching the real GitHub user id, which is the part the app could not
+  fabricate — it only exists if the token exchange actually happened
+- an access token stored, and a live session row
+
+**The Phase 0 auth caveat is closed.** Every step from the sign-in page to a session now has
+evidence behind it.
+
+### Note on the port
+
+`AUTH_URL` and the GitHub app's registered callback are both on **3001** for this machine. Changing
+the port means changing both, or sign-in breaks with a callback-mismatch error that the provider
+reports only generically — which is exactly the case the custom error messages explain.
+
+### Repository identity — after Phase 10
+
+Every commit was authored as the assistant, with `Co-Authored-By` and session trailers on
+thirteen of them. All sixteen commits were rewritten to the project owner
+(`BroJustLeaveMeAlone`, GitHub no-reply address) and the trailers stripped.
+
+The no-reply address was chosen over the real one deliberately: GitHub still links every commit to
+the account, but a public repository never carries a harvestable address.
+
+Rebuilt with `git commit-tree` rather than `git filter-branch`, because filter-branch shells
+out through `sh` and this machine's msys coreutils are broken. Rebuilding the chain commit by
+commit needs no shell and gives exact control over dates and message encoding.
+
+**Verified:** the tree hash is byte-identical before and after, so history changed and content did
+not. Original timestamps preserved. CI green on the rewritten history. Backup refs
+(`backup-original-history`, `backup-before-identity-rewrite`) exist locally and were
+deliberately never pushed — pushing them would restore the old attribution.
+
+### Smaller fixes
+
+- `experimental.typedRoutes` moved to `typedRoutes`, where Next 15.5 promoted it. It was
+  emitting a deprecation warning on every boot.
 
 ---
 
@@ -675,70 +794,3 @@ Carried from [PLAN.md](./PLAN.md) §Key Risks. Reviewed each phase boundary.
 | 2026-09-04 | PROGRESS.md created. Phase 0 started — tooling verified, pnpm installed                                                                                                                               |
 
 ---
-
-## OAuth sign-in (built; redirect untested)
-
-**Goal:** close out the standing caveat that no real sign-in path existed.
-
-### Delivered
-
-- [x] `/signin` page that reads which providers actually have credentials and offers exactly
-      those. A button for an unregistered provider only leads to a broken callback, and that error
-      is far more confusing than an absent button.
-- [x] Auth.js error codes translated into messages that name the likely cause. The stock
-      "Try signing in with a different account" is useless when the real problem is a callback URL
-      typo in a provider console.
-- [x] `callbackUrl` restricted to relative paths, so a crafted link cannot bounce someone to
-      another origin carrying a freshly minted session.
-- [x] One sign-out path through Auth.js, which deletes the session row rather than only clearing
-      the cookie — a stolen cookie stops working. It covers the development session too, so the
-      duplicate `devSignOut` was removed.
-- [x] Provider setup instructions, including exact callback URLs, in `CREDENTIALS.example.md`.
-
-### Verified live
-
-Against a booted production server with no providers configured: `/signin` renders and explains
-the absence; `/api/auth/providers` agrees; `?error=OAuthCallback` produces the
-callback-mismatch explanation; an absolute `callbackUrl` is rejected; a signed-in visitor is
-redirected away rather than offered sign-in again.
-
-### GitHub added as the working provider
-
-Discord was attempted first and **blocked** — its developer portal demands an email already
-registered to another account. GitHub needs no consent screen, no verification, and reuses the
-account that owns this repo. Adding it was a five-line change, which is the payoff for the
-conditional-provider design.
-
-Google remains unwired: it needs a configured consent screen plus explicitly listed test users
-while unpublished, and refuses plain `http://` redirects for any host but `localhost`.
-
-### Verified against the real provider
-
-A registered GitHub app is now in `.env`. Confirmed against a booted server: Auth.js advertises the
-provider, the sign-in page offers it, and `POST /api/auth/signin/github` returns a 302 to
-`github.com/login/oauth/authorize` carrying the correct `client_id`, a `redirect_uri` matching the
-registered one exactly, and scope `read:user user:email`. **GitHub accepted the client id** rather
-than serving an error, which it would do for an unregistered or mismatched app.
-
-`state` is absent from the authorize URL, and that is correct rather than a gap: Auth.js uses
-**PKCE** (`code_challenge` with `S256`, verifier in an encrypted cookie) for this provider. Checked
-explicitly, because a missing CSRF check would be easy to wave past.
-
-### Round-trip completed
-
-A real GitHub account went through the consent screen and landed back signed in. Confirmed in the
-database rather than by looking at the page:
-
-- an `accounts` row with `provider = github`, `type = oauth`, scope `read:user,user:email`
-- `providerAccountId` matching the real GitHub user id, which is the part the app could not
-  fabricate — it only exists if the token exchange actually happened
-- an access token stored, and a live session row
-
-**The Phase 0 auth caveat is closed.** Every step from the sign-in page to a session now has
-evidence behind it.
-
-### Note on the port
-
-`AUTH_URL` and the GitHub app's registered callback are both on **3001** for this machine. Changing
-the port means changing both, or sign-in breaks with a callback-mismatch error that the provider
-reports only generically — which is exactly the case the custom error messages explain.
