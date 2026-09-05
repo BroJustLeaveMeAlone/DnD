@@ -38,6 +38,8 @@ whichever you want.
 
 | Provider | Key                   | Value             |
 | -------- | --------------------- | ----------------- |
+| GitHub   | `AUTH_GITHUB_ID`      | `<client id>`     |
+| GitHub   | `AUTH_GITHUB_SECRET`  | `<client secret>` |
 | Discord  | `AUTH_DISCORD_ID`     | `<client id>`     |
 | Discord  | `AUTH_DISCORD_SECRET` | `<client secret>` |
 | Google   | `AUTH_GOOGLE_ID`      | `<client id>`     |
@@ -49,11 +51,27 @@ The redirect URI must match **exactly** — scheme, host, port, and path. A mism
 most common OAuth failure, and the provider reports it only as a generic error.
 
 ```
+http://localhost:3000/api/auth/callback/github
 http://localhost:3000/api/auth/callback/discord
 http://localhost:3000/api/auth/callback/google
 ```
 
 Substitute the port you actually run on. `AUTH_URL` in `.env` must match the same origin.
+
+### GitHub — the quickest
+
+No consent screen, no verification, no separate developer account.
+
+1. https://github.com/settings/developers → **OAuth Apps** → **New OAuth App**
+2. **Application name**: anything
+3. **Homepage URL**: `http://localhost:3000` (or your port)
+4. **Authorization callback URL**: the GitHub URL above — this is the field that matters
+5. **Register application**
+6. Copy **Client ID** → `AUTH_GITHUB_ID`
+7. **Generate a new client secret** → copy immediately → `AUTH_GITHUB_SECRET`
+
+GitHub only returns an email address if the account has a public one, or via the `user:email`
+scope, which Auth.js requests by default. An account with no verified email will fail to link.
 
 ### Discord
 

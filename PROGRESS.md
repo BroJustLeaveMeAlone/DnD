@@ -114,9 +114,9 @@ Statuses: `Not started` · `In progress` · `Complete` · `Blocked`
 
 - [x] Auth.js v5 wired to the Drizzle adapter, lazy config so builds don't need a live DB
 - [x] Providers registered conditionally — a clone with no OAuth apps still boots
-- [x] **Sign-in flow built** — see the OAuth section below
-- [ ] **Redirect round-trip still unexercised.** Needs a registered provider app; everything up to
-      the provider handoff is verified.
+- [x] **Sign-in flow built and handed off to a real provider** — see the OAuth section below
+- [ ] **Final browser authorisation not performed.** Everything up to GitHub's consent screen is
+      verified, including GitHub accepting the client id. Only the human click remains.
 
 ### CI
 
@@ -703,8 +703,30 @@ the absence; `/api/auth/providers` agrees; `?error=OAuthCallback` produces the
 callback-mismatch explanation; an absolute `callbackUrl` is rejected; a signed-in visitor is
 redirected away rather than offered sign-in again.
 
+### GitHub added as the working provider
+
+Discord was attempted first and **blocked** — its developer portal demands an email already
+registered to another account. GitHub needs no consent screen, no verification, and reuses the
+account that owns this repo. Adding it was a five-line change, which is the payoff for the
+conditional-provider design.
+
+Google remains unwired: it needs a configured consent screen plus explicitly listed test users
+while unpublished, and refuses plain `http://` redirects for any host but `localhost`.
+
+### Verified against the real provider
+
+A registered GitHub app is now in `.env`. Confirmed against a booted server: Auth.js advertises the
+provider, the sign-in page offers it, and `POST /api/auth/signin/github` returns a 302 to
+`github.com/login/oauth/authorize` carrying the correct `client_id`, a `redirect_uri` matching the
+registered one exactly, and scope `read:user user:email`. **GitHub accepted the client id** rather
+than serving an error, which it would do for an unregistered or mismatched app.
+
+`state` is absent from the authorize URL, and that is correct rather than a gap: Auth.js uses
+**PKCE** (`code_challenge` with `S256`, verifier in an encrypted cookie) for this provider. Checked
+explicitly, because a missing CSRF check would be easy to wave past.
+
 ### Still open
 
-The **provider redirect itself** has not run, because it needs a registered OAuth app. Everything
-up to the handoff is exercised. Registering a Discord app is the shortest path — no consent screen
-to configure.
+The **final browser authorisation** — clicking "Authorize" on GitHub's consent screen and landing
+back with a session — has not been performed. It cannot be scripted without driving a real browser
+through a third-party login. Everything on this side of that click is exercised.

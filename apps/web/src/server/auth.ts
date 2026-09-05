@@ -2,6 +2,7 @@ import { DrizzleAdapter } from '@auth/drizzle-adapter';
 import { getDatabase, schema } from '@ttrpg/db';
 import NextAuth, { type NextAuthConfig } from 'next-auth';
 import Discord from 'next-auth/providers/discord';
+import GitHub from 'next-auth/providers/github';
 import Google from 'next-auth/providers/google';
 import { serverEnv } from '@/env';
 
@@ -21,6 +22,9 @@ export function configuredProviders(): ProviderInfo[] {
   const env = serverEnv();
   const available: ProviderInfo[] = [];
 
+  if (env.AUTH_GITHUB_ID && env.AUTH_GITHUB_SECRET) {
+    available.push({ id: 'github', name: 'GitHub' });
+  }
   if (env.AUTH_DISCORD_ID && env.AUTH_DISCORD_SECRET) {
     available.push({ id: 'discord', name: 'Discord' });
   }
@@ -34,6 +38,9 @@ export function configuredProviders(): ProviderInfo[] {
 function providers(env: ReturnType<typeof serverEnv>): NextAuthConfig['providers'] {
   const configured: NextAuthConfig['providers'] = [];
 
+  if (env.AUTH_GITHUB_ID && env.AUTH_GITHUB_SECRET) {
+    configured.push(GitHub({ clientId: env.AUTH_GITHUB_ID, clientSecret: env.AUTH_GITHUB_SECRET }));
+  }
   if (env.AUTH_DISCORD_ID && env.AUTH_DISCORD_SECRET) {
     configured.push(
       Discord({ clientId: env.AUTH_DISCORD_ID, clientSecret: env.AUTH_DISCORD_SECRET }),

@@ -10,6 +10,11 @@ const serverEnvSchema = z.object({
   AUTH_SECRET: z.string().min(1, 'AUTH_SECRET is required — generate one with `npx auth secret`'),
   AUTH_URL: z.url().optional(),
 
+  // Every provider is optional. The app boots with none configured and the
+  // sign-in page says so, rather than failing at startup over a feature the
+  // deployment may not want.
+  AUTH_GITHUB_ID: z.string().optional(),
+  AUTH_GITHUB_SECRET: z.string().optional(),
   AUTH_DISCORD_ID: z.string().optional(),
   AUTH_DISCORD_SECRET: z.string().optional(),
   AUTH_GOOGLE_ID: z.string().optional(),
