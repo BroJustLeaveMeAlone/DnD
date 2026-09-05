@@ -5,11 +5,32 @@ import Discord from 'next-auth/providers/discord';
 import Google from 'next-auth/providers/google';
 import { serverEnv } from '@/env';
 
+export interface ProviderInfo {
+  id: string;
+  name: string;
+}
+
 /**
- * Providers are wired only when their credentials are present, so a fresh clone
- * with no OAuth apps registered still boots. Phase 0 ships OAuth only; email
- * magic links need a mail transport and land alongside the Commons.
+ * Which providers this deployment actually has credentials for.
+ *
+ * Read by the sign-in page so it offers exactly what is configured. A button
+ * for an unregistered provider would send the user to a broken callback, and
+ * the resulting error page is far more confusing than an absent button.
  */
+export function configuredProviders(): ProviderInfo[] {
+  const env = serverEnv();
+  const available: ProviderInfo[] = [];
+
+  if (env.AUTH_DISCORD_ID && env.AUTH_DISCORD_SECRET) {
+    available.push({ id: 'discord', name: 'Discord' });
+  }
+  if (env.AUTH_GOOGLE_ID && env.AUTH_GOOGLE_SECRET) {
+    available.push({ id: 'google', name: 'Google' });
+  }
+
+  return available;
+}
+
 function providers(env: ReturnType<typeof serverEnv>): NextAuthConfig['providers'] {
   const configured: NextAuthConfig['providers'] = [];
 
@@ -38,6 +59,14 @@ export function buildAuthConfig(): NextAuthConfig {
     }),
     providers: providers(env),
     session: { strategy: 'database' },
+
+    // Our own pages, so an auth failure looks like the rest of the app and can
+    // explain what went wrong in terms of this project's setup.
+    pages: {
+      signIn: '/signin',
+      error: '/signin',
+    },
+
     callbacks: {
       session({ session, user }) {
         if (session.user) session.user.id = user.id;
@@ -48,9 +77,9 @@ export function buildAuthConfig(): NextAuthConfig {
 }
 
 /**
- * Lazy config. NextAuth accepts a factory, which defers env validation and
- * pool creation to the first request instead of module evaluation — so a
- * production build (or a container image build) does not need a reachable
- * database or a populated .env just to collect page data.
+ * Lazy config. NextAuth accepts a factory, which defers env validation and pool
+ * creation to the first request instead of module evaluation — so a production
+ * build (or a container image build) does not need a reachable database or a
+ * populated .env just to collect page data.
  */
 export const { handlers, auth, signIn, signOut } = NextAuth(buildAuthConfig);

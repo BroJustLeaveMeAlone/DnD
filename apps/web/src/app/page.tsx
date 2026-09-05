@@ -1,19 +1,22 @@
 import { ENGINE_VERSION } from '@ttrpg/rules-engine';
 import Link from 'next/link';
-import { auth } from '@/server/auth';
-import { devSignIn, devSignOut } from '@/server/dev-auth';
+import { auth, configuredProviders } from '@/server/auth';
+import { signOutEverywhere } from '@/server/auth-actions';
 
-const button =
+const primary =
   'inline-block rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-700 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-neutral-300';
+
+const secondary =
+  'inline-block rounded-md border border-neutral-300 px-4 py-2 text-sm font-medium hover:bg-neutral-100 dark:border-neutral-700 dark:hover:bg-neutral-800';
 
 export default async function Home() {
   const session = await auth();
+  const providers = configuredProviders();
   const isDevelopment = process.env.NODE_ENV !== 'production';
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-2xl flex-col justify-center gap-8 px-6 py-16">
       <header className="space-y-3">
-        <p className="text-xs font-medium uppercase tracking-widest text-neutral-500">Phase 4</p>
         <h1 className="text-3xl font-semibold tracking-tight">TTRPG Platform</h1>
         <p className="text-neutral-600 dark:text-neutral-400">
           Build and play tabletop RPGs. 5e is the starter kit, not the ceiling.
@@ -21,33 +24,25 @@ export default async function Home() {
       </header>
 
       <div className="flex flex-wrap gap-3">
-        <Link href="/compendium" className={button}>
-          Browse the compendium
+        <Link href="/compendium" className={secondary}>
+          Compendium
         </Link>
         {session?.user ? (
           <>
-            {[
-              ['/characters', 'Characters'],
-              ['/campaigns', 'Campaigns'],
-              ['/systems', 'Systems'],
-            ].map(([href, label]) => (
-              <Link
-                key={href}
-                href={href!}
-                className="inline-block rounded-md border border-neutral-300 px-4 py-2 text-sm font-medium hover:bg-neutral-100 dark:border-neutral-700 dark:hover:bg-neutral-800"
-              >
-                {label}
-              </Link>
-            ))}
+            <Link href="/characters" className={secondary}>
+              Characters
+            </Link>
+            <Link href="/campaigns" className={secondary}>
+              Campaigns
+            </Link>
+            <Link href="/systems" className={secondary}>
+              Systems
+            </Link>
           </>
         ) : (
-          isDevelopment && (
-            <form action={devSignIn}>
-              <button type="submit" className={button}>
-                Sign in (development)
-              </button>
-            </form>
-          )
+          <Link href="/signin" className={primary}>
+            Sign in
+          </Link>
         )}
       </div>
 
@@ -59,7 +54,7 @@ export default async function Home() {
         <dd className="flex items-center gap-3 font-mono">
           {session?.user?.email ?? 'signed out'}
           {session?.user && (
-            <form action={devSignOut}>
+            <form action={signOutEverywhere}>
               <button
                 type="submit"
                 className="font-sans text-xs text-neutral-500 underline underline-offset-4"
@@ -68,6 +63,15 @@ export default async function Home() {
               </button>
             </form>
           )}
+        </dd>
+
+        <dt className="text-neutral-500">Sign-in</dt>
+        <dd className="font-mono">
+          {providers.length > 0
+            ? providers.map((p) => p.name).join(', ')
+            : isDevelopment
+              ? 'development only'
+              : 'none configured'}
         </dd>
 
         <dt className="text-neutral-500">Health</dt>

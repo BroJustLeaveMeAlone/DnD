@@ -5,6 +5,7 @@ import {
   deleteEncounter,
   getDatabase,
   getEncounter,
+  notifyCampaign,
   saveEncounterState,
 } from '@ttrpg/db';
 import {
@@ -40,8 +41,11 @@ export async function createEncounterAction(form: FormData): Promise<void> {
   const campaignId = String(form.get('campaignId') ?? '');
   const name = String(form.get('name') ?? '').trim() || 'Encounter';
 
-  const id = await createEncounter(getDatabase(), { campaignId, gmId, name, state: EMPTY });
+  const db = getDatabase();
+  const id = await createEncounter(db, { campaignId, gmId, name, state: EMPTY });
   if (!id) redirect(`/campaigns/${campaignId}?error=forbidden`);
+
+  await notifyCampaign(db, campaignId, 'campaign');
 
   revalidatePath(`/campaigns/${campaignId}`);
   redirect(`/encounters/${id}`);
@@ -73,6 +77,10 @@ async function mutate(
     state: change(parsed.data as unknown as EncounterLike),
   });
   if (!ok) redirect(`/encounters/${encounterId}?error=forbidden`);
+
+  // Every encounter mutation funnels through here, so one notify covers them
+  // all. It must come before any redirect — `redirect` throws to unwind.
+  await notifyCampaign(db, row.campaignId, 'encounter');
 
   revalidatePath(`/encounters/${encounterId}`);
 }
@@ -255,7 +263,13 @@ export async function rollAction(form: FormData): Promise<void> {
 export async function deleteEncounterAction(form: FormData): Promise<void> {
   const gmId = await requireUserId();
   const campaignId = String(form.get('campaignId') ?? '');
-  await deleteEncounter(getDatabase(), String(form.get('encounterId') ?? ''), gmId);
+
+  const db = getDatabase();
+  const deleted = await deleteEncounter(db, String(form.get('encounterId') ?? ''), gmId);
+
+  // Players sitting on the deleted encounter need to be moved off it.
+  if (deleted) await notifyCampaign(db, campaignId, 'campaign');
+
   revalidatePath(`/campaigns/${campaignId}`);
   redirect(`/campaigns/${campaignId}`);
 }

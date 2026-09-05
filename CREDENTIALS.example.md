@@ -33,7 +33,8 @@ Created by `docker compose up -d postgres`.
 
 ## OAuth providers
 
-Callback URL is `http://localhost:<port>/api/auth/callback/<provider>`.
+Neither is required — the app boots with none configured, and the sign-in page says so. Configure
+whichever you want.
 
 | Provider | Key                   | Value             |
 | -------- | --------------------- | ----------------- |
@@ -41,6 +42,39 @@ Callback URL is `http://localhost:<port>/api/auth/callback/<provider>`.
 | Discord  | `AUTH_DISCORD_SECRET` | `<client secret>` |
 | Google   | `AUTH_GOOGLE_ID`      | `<client id>`     |
 | Google   | `AUTH_GOOGLE_SECRET`  | `<client secret>` |
+
+### Callback URLs
+
+The redirect URI must match **exactly** — scheme, host, port, and path. A mismatch is the single
+most common OAuth failure, and the provider reports it only as a generic error.
+
+```
+http://localhost:3000/api/auth/callback/discord
+http://localhost:3000/api/auth/callback/google
+```
+
+Substitute the port you actually run on. `AUTH_URL` in `.env` must match the same origin.
+
+### Discord
+
+1. https://discord.com/developers/applications → **New Application**
+2. **OAuth2** in the sidebar → **Redirects** → add the callback URL above → **Save Changes**
+3. Copy **Client ID** → `AUTH_DISCORD_ID`
+4. **Reset Secret** → copy → `AUTH_DISCORD_SECRET`
+
+No scopes need selecting; Auth.js requests `identify email` itself.
+
+### Google
+
+1. https://console.cloud.google.com/apis/credentials — create or pick a project
+2. Configure the **OAuth consent screen** first (External is fine). Add yourself as a test user
+   while it is unpublished, or sign-in will be refused.
+3. **Create Credentials → OAuth client ID → Web application**
+4. Under **Authorised redirect URIs**, add the callback URL above
+5. Copy the client ID and secret into `.env`
+
+Google refuses plain `http://` redirects for any host except `localhost`. Deploying anywhere else
+means HTTPS and a second redirect URI.
 
 ---
 

@@ -17,6 +17,7 @@ import {
 } from '@ttrpg/rules-engine';
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
+import { LiveUpdates } from '@/components/live-updates';
 import { auth } from '@/server/auth';
 import {
   assignCharacterAction,
@@ -121,6 +122,8 @@ export default async function CampaignPage({
 
   return (
     <main className="mx-auto max-w-4xl px-6 py-10">
+      <LiveUpdates campaignId={campaign.id} />
+
       <nav className="mb-6 text-sm">
         <Link href="/campaigns" className="text-neutral-500 underline-offset-4 hover:underline">
           ← Campaigns

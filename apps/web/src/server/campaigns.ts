@@ -6,6 +6,7 @@ import {
   deleteCampaign,
   getDatabase,
   joinByInvite,
+  notifyCampaign,
   removeMember,
   rotateInviteToken,
   setHouseRules,
@@ -62,11 +63,16 @@ export async function assignCharacterAction(form: FormData): Promise<void> {
   const campaignId = String(form.get('campaignId') ?? '');
   const raw = String(form.get('characterId') ?? '');
 
-  await assignCharacter(getDatabase(), {
+  const db = getDatabase();
+  await assignCharacter(db, {
     campaignId,
     userId,
     characterId: raw === '' ? null : raw,
   });
+
+  // The party dashboard shows everyone's sheet, so one player swapping
+  // characters changes the view for the whole table.
+  await notifyCampaign(db, campaignId, 'campaign');
 
   revalidatePath(`/campaigns/${campaignId}`);
   redirect(`/campaigns/${campaignId}`);
@@ -79,7 +85,8 @@ export async function setRoleAction(form: FormData): Promise<void> {
   const role = z.enum(['gm', 'player', 'spectator']).safeParse(form.get('role'));
   if (!role.success) redirect(`/campaigns/${campaignId}?error=bad-role`);
 
-  const ok = await setMemberRole(getDatabase(), {
+  const db = getDatabase();
+  const ok = await setMemberRole(db, {
     campaignId,
     gmId,
     userId: String(form.get('userId') ?? ''),
@@ -90,6 +97,10 @@ export async function setRoleAction(form: FormData): Promise<void> {
   // campaign unadministerable.
   if (!ok) redirect(`/campaigns/${campaignId}?error=last-gm`);
 
+  // A role change alters what the affected member can see, so their open view
+  // has to re-render rather than keep GM controls it no longer has.
+  await notifyCampaign(db, campaignId, 'campaign');
+
   revalidatePath(`/campaigns/${campaignId}`);
   redirect(`/campaigns/${campaignId}`);
 }
@@ -98,13 +109,16 @@ export async function removeMemberAction(form: FormData): Promise<void> {
   const actorId = await requireUserId();
   const campaignId = String(form.get('campaignId') ?? '');
 
-  const ok = await removeMember(getDatabase(), {
+  const db = getDatabase();
+  const ok = await removeMember(db, {
     campaignId,
     actorId,
     userId: String(form.get('userId') ?? ''),
   });
 
   if (!ok) redirect(`/campaigns/${campaignId}?error=last-gm`);
+
+  await notifyCampaign(db, campaignId, 'campaign');
 
   revalidatePath(`/campaigns/${campaignId}`);
   redirect(actorId === String(form.get('userId')) ? '/campaigns' : `/campaigns/${campaignId}`);
@@ -142,8 +156,13 @@ export async function setHouseRulesAction(form: FormData): Promise<void> {
     }
   }
 
-  const ok = await setHouseRules(getDatabase(), { campaignId, gmId, houseRules: parsed.data });
+  const db = getDatabase();
+  const ok = await setHouseRules(db, { campaignId, gmId, houseRules: parsed.data });
   if (!ok) redirect(`/campaigns/${campaignId}?error=forbidden`);
+
+  // House rules recompute every sheet at the table, so this is the change most
+  // worth pushing out immediately.
+  await notifyCampaign(db, campaignId, 'campaign');
 
   revalidatePath(`/campaigns/${campaignId}`);
   redirect(`/campaigns/${campaignId}`);

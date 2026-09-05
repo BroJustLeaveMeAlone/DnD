@@ -3,6 +3,7 @@ import { activeCombatant } from '@ttrpg/rules-engine';
 import { type Combatant, encounterState, initiativeOrder } from '@ttrpg/schemas';
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
+import { LiveUpdates } from '@/components/live-updates';
 import { auth } from '@/server/auth';
 import {
   addCombatantAction,
@@ -66,6 +67,8 @@ export default async function EncounterPage({
 
   return (
     <main className="mx-auto max-w-5xl px-6 py-10">
+      <LiveUpdates campaignId={row.campaignId} />
+
       <nav className="mb-6 text-sm">
         <Link
           href={`/campaigns/${row.campaignId}`}

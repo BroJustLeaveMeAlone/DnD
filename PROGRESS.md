@@ -9,15 +9,15 @@ Design intent and full scope live in [PLAN.md](./PLAN.md) — this file tracks e
 
 ## Current Status
 
-|                  |                                                                                                |
-| ---------------- | ---------------------------------------------------------------------------------------------- |
-| **Active arc**   | Arc 4 — Play                                                                                   |
-| **Active phase** | Phase 10 — Dice + combat tracker                                                               |
-| **Status**       | Complete                                                                                       |
-| **Summary**      | Full dice notation, pure combat transitions, and a working initiative tracker. **356 tests**.  |
-| **Caveats**      | No realtime sync — players refresh to see changes. House rules still raw JSON. OAuth untested. |
-| **Repo**         | https://github.com/BroJustLeaveMeAlone/DnD                                                     |
-| **Next up**      | Phase 11 — VTT (largest risk item; roughly doubles the project)                                |
+|                  |                                                                                      |
+| ---------------- | ------------------------------------------------------------------------------------ |
+| **Active arc**   | Arc 4 — Play                                                                         |
+| **Active phase** | Phase 10 — Dice + combat tracker                                                     |
+| **Status**       | Complete                                                                             |
+| **Summary**      | Dice, combat tracker, realtime sync, and the full OAuth sign-in flow. **371 tests**. |
+| **Caveats**      | OAuth needs provider credentials to test the redirect. House rules still raw JSON.   |
+| **Repo**         | https://github.com/BroJustLeaveMeAlone/DnD                                           |
+| **Next up**      | Phase 11 — VTT (largest risk item; roughly doubles the project)                      |
 
 ---
 
@@ -114,8 +114,9 @@ Statuses: `Not started` · `In progress` · `Complete` · `Blocked`
 
 - [x] Auth.js v5 wired to the Drizzle adapter, lazy config so builds don't need a live DB
 - [x] Providers registered conditionally — a clone with no OAuth apps still boots
-- [ ] **Sign-in round-trip untested** — needs real Discord/Google credentials. Adapter and session
-      read path work; the redirect flow itself has never been exercised.
+- [x] **Sign-in flow built** — see the OAuth section below
+- [ ] **Redirect round-trip still unexercised.** Needs a registered provider app; everything up to
+      the provider handoff is verified.
 
 ### CI
 
@@ -519,6 +520,65 @@ through a renderer chosen for its escaping rather than its feature list.
   here; the state document is already shaped for it, but it is a phase of its own.
 - No encounter builder, XP budgets, or monster import from the compendium.
 
+---
+
+## Phase 10.5 — Realtime Sync (Complete)
+
+**Goal:** players see the combat tracker and party dashboard change without refreshing.
+
+### Delivered
+
+- [x] **Postgres LISTEN/NOTIFY** as the broker, one channel per campaign so Postgres does the
+      filtering rather than every listener waking for every table's traffic
+- [x] `subscribeToCampaign` holds a **dedicated client, never the pool** — `LISTEN` binds to the
+      connection that issued it, and a pooled connection is handed back and reused the moment the
+      query finishes, so the subscription would attach to a connection nobody reads from and no
+      notification would ever arrive
+- [x] `GET /api/campaigns/[id]/events` — SSE, authorised with the **same `roleIn` check the pages
+      use**, with heartbeat comments so proxies do not reap idle streams
+- [x] NOTIFY fired from every encounter mutation (one call in `mutate`, which all of them funnel
+      through) and from the campaign mutations that change what players see
+- [x] `LiveUpdates` client component — subscribes and calls `router.refresh()`
+- [x] **15 realtime tests** (round-trip, fan-out, unsubscribe, cross-campaign isolation, channel
+      naming and rejection of malformed ids)
+
+### SSE rather than WebSockets — a deliberate deviation from PLAN.md §16
+
+The plan says WebSockets over LISTEN/NOTIFY. Every update here travels **one way**, GM to table,
+and WebSockets in the Next.js App Router need a custom server — which means running something other
+than `next start` and complicating the Docker and self-host story for no gain on a one-directional
+feed. SSE needs no custom server and `EventSource` reconnects on its own.
+
+**The tradeoff:** when Arc 4's VTT needs client-to-server traffic (token drags, pings), that is
+genuinely bidirectional and will want WebSockets. This is not a decision that scales to Phase 11;
+it is the right shape for a broadcast feed and should be revisited, not extended, there.
+
+### Security shape
+
+The stream carries **no state** — only "something changed". Subscribers re-fetch through the
+ordinary authorised page render, so the live path can never show a spectator something the page
+itself would withhold, and a future permission change needs no parallel implementation here.
+
+Channel names are interpolated into `LISTEN "..."` because that takes an identifier rather than a
+bound parameter. That is only safe because the campaign id is validated as a UUID first, leaving a
+string of `[0-9a-f_]` — tested against injection-shaped inputs.
+
+### Verified live
+
+Against a booted production server: unauthenticated → 401, non-member → 403, malformed id → 403
+(not a 500 from a Postgres cast error), member → 200 with `text/event-stream`. A NOTIFY reached the
+stream with the right payload, and the `LISTEN` connection count went 1 → 0 on disconnect, proving
+cleanup — a leak there would exhaust the connection limit during a busy session.
+
+### Deliberately deferred
+
+- **No presence** — nobody can see who else is viewing.
+- **No optimistic updates.** A refresh round-trip is one server render; if that ever feels slow,
+  the state document is already shaped to be diffed and applied client-side.
+- Reconnection is whatever `EventSource` does by default. No `Last-Event-ID` replay, so an event
+  that lands during a reconnect is missed — harmless here because the refresh is idempotent and the
+  next event re-syncs, but it would matter for an append-only feed.
+
 ### Phase 0 exit criteria
 
 - [x] `pnpm install` succeeds
@@ -614,3 +674,37 @@ Carried from [PLAN.md](./PLAN.md) §Key Risks. Reviewed each phase boundary.
 | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 2026-09-04 | PLAN.md rewritten: repositioned to creation platform, VTT added, custom systems promoted to Arc 3, AI layer added, Studio/Codex/Commons pillars added, work order expanded to 19 phases across 5 arcs |
 | 2026-09-04 | PROGRESS.md created. Phase 0 started — tooling verified, pnpm installed                                                                                                                               |
+
+---
+
+## OAuth sign-in (built; redirect untested)
+
+**Goal:** close out the standing caveat that no real sign-in path existed.
+
+### Delivered
+
+- [x] `/signin` page that reads which providers actually have credentials and offers exactly
+      those. A button for an unregistered provider only leads to a broken callback, and that error
+      is far more confusing than an absent button.
+- [x] Auth.js error codes translated into messages that name the likely cause. The stock
+      "Try signing in with a different account" is useless when the real problem is a callback URL
+      typo in a provider console.
+- [x] `callbackUrl` restricted to relative paths, so a crafted link cannot bounce someone to
+      another origin carrying a freshly minted session.
+- [x] One sign-out path through Auth.js, which deletes the session row rather than only clearing
+      the cookie — a stolen cookie stops working. It covers the development session too, so the
+      duplicate `devSignOut` was removed.
+- [x] Provider setup instructions, including exact callback URLs, in `CREDENTIALS.example.md`.
+
+### Verified live
+
+Against a booted production server with no providers configured: `/signin` renders and explains
+the absence; `/api/auth/providers` agrees; `?error=OAuthCallback` produces the
+callback-mismatch explanation; an absolute `callbackUrl` is rejected; a signed-in visitor is
+redirected away rather than offered sign-in again.
+
+### Still open
+
+The **provider redirect itself** has not run, because it needs a registered OAuth app. Everything
+up to the handoff is exercised. Registering a Discord app is the shortest path — no consent screen
+to configure.

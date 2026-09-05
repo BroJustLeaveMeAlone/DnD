@@ -1,6 +1,6 @@
 'use server';
 
-import { findOrCreateUser, getDatabase, issueSession, revokeSession } from '@ttrpg/db';
+import { findOrCreateUser, getDatabase, issueSession } from '@ttrpg/db';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
@@ -53,14 +53,6 @@ export async function devSignIn(): Promise<void> {
   redirect('/characters');
 }
 
-export async function devSignOut(): Promise<void> {
-  const store = await cookies();
-  const token = store.get(SESSION_COOKIE)?.value;
-
-  if (token) {
-    await revokeSession(getDatabase(), token);
-    store.delete(SESSION_COOKIE);
-  }
-
-  redirect('/');
-}
+// Sign-out is deliberately not duplicated here. Auth.js `signOut` deletes the
+// session row through the adapter and clears the same cookie, so it works for a
+// development session as well as an OAuth one — see server/auth-actions.ts.
