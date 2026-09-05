@@ -173,6 +173,27 @@ export const SKILLS: Readonly<Record<string, string>> = {
  * levels — expressing the multiplier as data keeps half-proficiency and
  * expertise out of the engine, where they would be a 5e-ism.
  */
+/**
+ * Ability scores cap at 20, and a few features raise that.
+ *
+ * The cap is itself a derived stat rather than a constant, because the engine's
+ * `cap` operation takes the *smallest* cap — so a feature emitting `cap 24`
+ * alongside a hardcoded `cap 20` would be ignored, which is backwards. Making
+ * the limit a value that features `set` gets the direction right: Primal
+ * Champion sets `attr.str.cap` to 24, and the clamp reads whatever it says.
+ */
+export const abilityCapDerivations = () =>
+  ABILITIES.flatMap((ability) => [
+    { key: `attr.${ability.key}.cap`, name: `${ability.name} maximum`, base: 20 },
+  ]);
+
+/** The clamp itself, emitted once per ability by the module. */
+export const abilityCapEffects = () =>
+  ABILITIES.map((ability) => ({
+    effects: [capAt(`attr.${ability.key}.score`, `attr.${ability.key}.cap`)],
+    detail: 'ability score maximum',
+  }));
+
 export const skillDerivations = () =>
   Object.entries(SKILLS).map(([skill, ability]) => ({
     key: `skill.${skill}`,

@@ -79,6 +79,15 @@ export interface SystemModule {
   attributes: AttributeDefinition[];
   derived: DerivedStatDefinition[];
   /**
+   * Effects that apply to every character in the system, without being taken.
+   *
+   * Entities only contribute when a character selects them, which is right for
+   * species and items and wrong for rules that simply hold — an ability score
+   * maximum, an encumbrance formula, a universal proficiency. Putting those on
+   * an entity means they silently never apply, because nobody takes "the rules".
+   */
+  rules?: GrantSpec[];
+  /**
    * What each proficiency rank contributes, exposed to formulas as
    * `prof.<target>`. Lives in the module because "expertise doubles your bonus"
    * is a 5e rule, not a universal one.
@@ -207,6 +216,14 @@ export function compile(module: SystemModule, build: CharacterBuild): Resolution
     if (!entity) throw new ModuleError(`\`${key}\` is not defined in system \`${module.id}\``);
     return entity;
   };
+
+  // --- system-wide rules ----------------------------------------------------
+  // Emitted first so their source reads as the system itself in any trace.
+  emit(
+    { key: module.id, type: 'rule', name: module.name, grants: module.rules ?? [] },
+    totalLevel,
+    always,
+  );
 
   // --- species, background, feats, chosen options ---------------------------
   for (const key of build.taken ?? []) emit(require(key), totalLevel, always);

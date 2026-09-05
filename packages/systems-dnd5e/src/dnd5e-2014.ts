@@ -9,15 +9,16 @@ import {
   f,
   grant,
   noArmour,
-  pool,
   prof,
-  resist,
+  abilityCapDerivations,
+  abilityCapEffects,
   saveDerivations,
-  sense,
   set,
   skillDerivations,
   wearingArmour,
 } from './authoring.js';
+import { classes2014, subclasses2014 } from './srd/classes-2014.js';
+import { species2014 } from './srd/species-2014.js';
 
 /**
  * D&D 5e (2014) — SRD 5.1, CC-BY-4.0.
@@ -31,62 +32,6 @@ import {
  * point: two modules encoding genuinely different rules through one engine is
  * what proves the engine is general.
  */
-
-const species: ModuleEntity[] = [
-  {
-    key: 'human',
-    type: 'species',
-    name: 'Human',
-    // 2014: the base human raises every ability by 1. 2024 moved this to
-    // backgrounds entirely — the clearest single difference between editions.
-    grants: [
-      {
-        effects: [
-          ...ABILITIES.map((a) => add(`attr.${a.key}.score`, 1)),
-          set('speed', 30),
-          grant('language', 'common'),
-        ],
-      },
-    ],
-  },
-  {
-    key: 'elf-high',
-    type: 'species',
-    name: 'High Elf',
-    grants: [
-      {
-        effects: [
-          add('attr.dex.score', 2),
-          add('attr.int.score', 1),
-          set('speed', 30),
-          sense('darkvision', 60),
-          prof('skill.perception', 'proficient'),
-          advantage('save.charmed'),
-          grant('trait', 'fey-ancestry'),
-          grant('trait', 'trance'),
-        ],
-      },
-    ],
-  },
-  {
-    key: 'dwarf-hill',
-    type: 'species',
-    name: 'Hill Dwarf',
-    grants: [
-      {
-        effects: [
-          add('attr.con.score', 2),
-          add('attr.wis.score', 1),
-          set('speed', 25),
-          sense('darkvision', 60),
-          resist('poison'),
-          // Dwarven Toughness: +1 HP per level.
-          add('hp.max', 'level'),
-        ],
-      },
-    ],
-  },
-];
 
 const backgrounds: ModuleEntity[] = [
   {
@@ -108,75 +53,6 @@ const backgrounds: ModuleEntity[] = [
         effects: [prof('skill.athletics', 'proficient'), prof('skill.intimidation', 'proficient')],
       },
     ],
-  },
-];
-
-const classes: ModuleEntity[] = [
-  {
-    key: 'fighter',
-    type: 'class',
-    name: 'Fighter',
-    data: { hitDie: 10, primary: 'str' },
-    grants: [
-      {
-        effects: [
-          add('hp.max', '10 + attr.con.mod + (level.fighter - 1) * (6 + attr.con.mod)'),
-          prof('save.str', 'proficient'),
-          prof('save.con', 'proficient'),
-          set('attacks', 1),
-          grant('proficiency', 'armour.all'),
-          grant('proficiency', 'weapon.martial'),
-        ],
-      },
-      { atLevel: 1, effects: [pool('second-wind', 1, 'short-rest')] },
-      { atLevel: 2, effects: [pool('action-surge', 1, 'short-rest')] },
-      // Extra Attack. In 2014 this is a flat +1 until level 11.
-      { atLevel: 5, effects: [add('attacks', 1)] },
-      { atLevel: 11, effects: [add('attacks', 1)] },
-      { atLevel: 20, effects: [add('attacks', 1)] },
-    ],
-  },
-  {
-    key: 'wizard',
-    type: 'class',
-    name: 'Wizard',
-    data: { hitDie: 6, primary: 'int' },
-    grants: [
-      {
-        effects: [
-          add('hp.max', '6 + attr.con.mod + (level.wizard - 1) * (4 + attr.con.mod)'),
-          prof('save.int', 'proficient'),
-          prof('save.wis', 'proficient'),
-          set('spell.attack', 'attr.int.mod + proficiency_bonus'),
-          set('spell.save_dc', '8 + attr.int.mod + proficiency_bonus'),
-          set('spell.prepared_max', 'attr.int.mod + level.wizard'),
-          grant('casting', 'arcane', { ability: 'int', preparation: 'prepared' }),
-        ],
-      },
-      { atLevel: 1, effects: [pool('spell_slot.1', 2, 'long-rest', 1)] },
-      { atLevel: 3, effects: [pool('spell_slot.2', 2, 'long-rest', 2)] },
-      { atLevel: 5, effects: [pool('spell_slot.3', 2, 'long-rest', 3)] },
-      { atLevel: 7, effects: [pool('spell_slot.4', 1, 'long-rest', 4)] },
-      { atLevel: 9, effects: [pool('spell_slot.5', 1, 'long-rest', 5)] },
-    ],
-  },
-];
-
-const subclasses: ModuleEntity[] = [
-  {
-    key: 'fighter-champion',
-    type: 'subclass',
-    name: 'Champion',
-    grants: [
-      { atLevel: 3, effects: [set('crit.range', 19)] },
-      { atLevel: 7, effects: [prof('skill.athletics', 'half'), prof('skill.acrobatics', 'half')] },
-    ],
-  },
-  {
-    key: 'wizard-evocation',
-    type: 'subclass',
-    name: 'School of Evocation',
-    grants: [{ atLevel: 2, effects: [grant('feature', 'sculpt-spells')] }],
   },
 ];
 
@@ -355,6 +231,8 @@ export const dnd5e2014: SystemModule = {
   },
   attributes: [...ABILITIES],
   proficiencyScale: PROFICIENCY_SCALE,
+  // Ability score maxima hold for everyone, taken or not.
+  rules: abilityCapEffects(),
   derived: [
     {
       key: 'proficiency_bonus',
@@ -379,16 +257,20 @@ export const dnd5e2014: SystemModule = {
     { key: 'spell.attack', name: 'Spell Attack', base: 0, display: { signed: true } },
     { key: 'spell.save_dc', name: 'Spell Save DC', base: 0 },
     { key: 'spell.prepared_max', name: 'Spells Prepared', base: 0 },
+    { key: 'spell.known_max', name: 'Spells Known', base: 0 },
+    { key: 'ki.save_dc', name: 'Ki Save DC', base: 0 },
+    { key: 'sneak_attack.dice', name: 'Sneak Attack Dice', base: 0, display: { suffix: 'd6' } },
     { key: 'attack.bonus', name: 'Attack Bonus', base: 0, display: { signed: true } },
     { key: 'damage.melee', name: 'Melee Damage', base: 0, display: { signed: true } },
+    ...abilityCapDerivations(),
     ...saveDerivations(),
     ...skillDerivations(),
   ],
   entities: [
-    ...species,
+    ...species2014,
     ...backgrounds,
-    ...classes,
-    ...subclasses,
+    ...classes2014,
+    ...subclasses2014,
     ...fightingStyles,
     ...items,
     ...spells,

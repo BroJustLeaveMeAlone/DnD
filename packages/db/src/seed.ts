@@ -49,6 +49,7 @@ export async function seedSystemModule(
       definition: {
         attributes: module.attributes,
         derived: module.derived,
+        rules: (module.rules ?? []).map(serializeGrant),
         proficiencyScale: module.proficiencyScale,
         source: module.source,
       },
@@ -60,6 +61,7 @@ export async function seedSystemModule(
         definition: {
           attributes: module.attributes,
           derived: module.derived,
+          rules: (module.rules ?? []).map(serializeGrant),
           proficiencyScale: module.proficiencyScale,
           source: module.source,
         },

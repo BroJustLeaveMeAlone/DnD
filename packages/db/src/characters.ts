@@ -22,6 +22,8 @@ import { characters, entities, systems } from './schema/index.js';
 interface StoredDefinition {
   attributes?: AttributeDefinition[];
   derived?: DerivedStatDefinition[];
+  /** Serialised the same way entity grants are — they carry formulas too. */
+  rules?: Record<string, unknown>[];
   proficiencyScale?: SystemModule['proficiencyScale'];
   source?: SystemModule['source'];
 }
@@ -71,6 +73,7 @@ export async function loadSystemModule(
     source: definition.source ?? { id: system.slug, name: system.name, license: null },
     attributes: definition.attributes ?? [],
     derived: definition.derived ?? [],
+    rules: (definition.rules ?? []).map(deserializeGrant),
     ...(definition.proficiencyScale ? { proficiencyScale: definition.proficiencyScale } : {}),
     entities: moduleEntities,
   };
