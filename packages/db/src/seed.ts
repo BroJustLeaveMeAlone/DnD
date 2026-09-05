@@ -1,8 +1,9 @@
 import type { SystemModule } from '@ttrpg/rules-engine';
 import { serializeGrant } from '@ttrpg/rules-engine';
-import { eq, sql } from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
 import type { Database } from './client.js';
-import { entities, systems, users } from './schema/index.js';
+import { entities, systems } from './schema/index.js';
+import { findOrCreateUserRow } from './upsert.js';
 
 /**
  * Ingests a SystemModule into Postgres.
@@ -18,18 +19,9 @@ const SYSTEM_ACCOUNT = {
   handle: 'system',
 } as const;
 
+/** Idempotent and safe under concurrency — see `findOrCreateUserRow`. */
 export async function ensureSystemAccount(db: Database): Promise<string> {
-  const existing = await db
-    .select({ id: users.id })
-    .from(users)
-    .where(eq(users.email, SYSTEM_ACCOUNT.email))
-    .limit(1);
-
-  if (existing[0]) return existing[0].id;
-
-  const [created] = await db.insert(users).values(SYSTEM_ACCOUNT).returning({ id: users.id });
-  if (!created) throw new Error('failed to create the system account');
-  return created.id;
+  return findOrCreateUserRow(db, { ...SYSTEM_ACCOUNT });
 }
 
 export interface SeedResult {

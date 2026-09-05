@@ -1,7 +1,8 @@
 import { randomBytes, randomUUID } from 'node:crypto';
 import { eq } from 'drizzle-orm';
 import type { Database } from './client.js';
-import { sessions, users } from './schema/index.js';
+import { sessions } from './schema/index.js';
+import { findOrCreateUserRow } from './upsert.js';
 
 /**
  * Direct session management, used by the development sign-in.
@@ -16,21 +17,18 @@ import { sessions, users } from './schema/index.js';
 
 const SESSION_DAYS = 30;
 
+/**
+ * Idempotent and safe under concurrency — see `findOrCreateUserRow`.
+ *
+ * An existing user's name is never overwritten: this is find-or-create, and
+ * rewriting someone's profile because they signed in again would be a
+ * surprising side effect.
+ */
 export async function findOrCreateUser(
   db: Database,
   input: { email: string; name: string; handle: string },
 ): Promise<string> {
-  const existing = await db
-    .select({ id: users.id })
-    .from(users)
-    .where(eq(users.email, input.email))
-    .limit(1);
-
-  if (existing[0]) return existing[0].id;
-
-  const [created] = await db.insert(users).values(input).returning({ id: users.id });
-  if (!created) throw new Error(`failed to create user ${input.email}`);
-  return created.id;
+  return findOrCreateUserRow(db, input);
 }
 
 export interface IssuedSession {
