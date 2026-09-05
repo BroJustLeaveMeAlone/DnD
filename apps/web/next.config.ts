@@ -14,9 +14,8 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   // Workspace packages ship TypeScript source; let Next compile them.
   transpilePackages: ['@ttrpg/db', '@ttrpg/schemas', '@ttrpg/rules-engine'],
-  experimental: {
-    typedRoutes: true,
-  },
+  // Promoted out of `experimental` in Next 15.5.
+  typedRoutes: true,
   eslint: {
     // Linting is a separate turbo task across the whole workspace; running it
     // again here would duplicate work and use a different config.

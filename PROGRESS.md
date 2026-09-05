@@ -114,9 +114,8 @@ Statuses: `Not started` · `In progress` · `Complete` · `Blocked`
 
 - [x] Auth.js v5 wired to the Drizzle adapter, lazy config so builds don't need a live DB
 - [x] Providers registered conditionally — a clone with no OAuth apps still boots
-- [x] **Sign-in flow built and handed off to a real provider** — see the OAuth section below
-- [ ] **Final browser authorisation not performed.** Everything up to GitHub's consent screen is
-      verified, including GitHub accepting the client id. Only the human click remains.
+- [x] **Sign-in works end to end.** A real GitHub account authorised through the consent screen and
+      landed back with a live session. See the OAuth section below.
 
 ### CI
 
@@ -725,8 +724,21 @@ than serving an error, which it would do for an unregistered or mismatched app.
 **PKCE** (`code_challenge` with `S256`, verifier in an encrypted cookie) for this provider. Checked
 explicitly, because a missing CSRF check would be easy to wave past.
 
-### Still open
+### Round-trip completed
 
-The **final browser authorisation** — clicking "Authorize" on GitHub's consent screen and landing
-back with a session — has not been performed. It cannot be scripted without driving a real browser
-through a third-party login. Everything on this side of that click is exercised.
+A real GitHub account went through the consent screen and landed back signed in. Confirmed in the
+database rather than by looking at the page:
+
+- an `accounts` row with `provider = github`, `type = oauth`, scope `read:user,user:email`
+- `providerAccountId` matching the real GitHub user id, which is the part the app could not
+  fabricate — it only exists if the token exchange actually happened
+- an access token stored, and a live session row
+
+**The Phase 0 auth caveat is closed.** Every step from the sign-in page to a session now has
+evidence behind it.
+
+### Note on the port
+
+`AUTH_URL` and the GitHub app's registered callback are both on **3001** for this machine. Changing
+the port means changing both, or sign-in breaks with a callback-mismatch error that the provider
+reports only generically — which is exactly the case the custom error messages explain.
