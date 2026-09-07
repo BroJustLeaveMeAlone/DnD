@@ -6,8 +6,6 @@ import {
   add,
   advantage,
   disadvantage,
-  f,
-  grant,
   noArmour,
   prof,
   abilityCapDerivations,
@@ -18,6 +16,7 @@ import {
   wearingArmour,
 } from './authoring.js';
 import { classes2014, subclasses2014 } from './srd/classes-2014.js';
+import { equipment2014 } from './srd/equipment.js';
 import { species2014 } from './srd/species-2014.js';
 
 /**
@@ -70,64 +69,6 @@ const fightingStyles: ModuleEntity[] = [
     type: 'feat',
     name: 'Dueling fighting style',
     grants: [{ effects: [add('damage.melee', 2)], detail: 'one-handed melee weapon' }],
-  },
-];
-
-const items: ModuleEntity[] = [
-  {
-    key: 'leather-armour',
-    type: 'item',
-    name: 'Leather Armor',
-    data: { category: 'light', ac: 11 },
-    grants: [{ effects: [set('ac', '11 + attr.dex.mod'), grant('state', 'armour.light')] }],
-  },
-  {
-    key: 'studded-leather',
-    type: 'item',
-    name: 'Studded Leather',
-    data: { category: 'light', ac: 12 },
-    grants: [{ effects: [set('ac', '12 + attr.dex.mod'), grant('state', 'armour.light')] }],
-  },
-  {
-    key: 'chain-mail',
-    type: 'item',
-    name: 'Chain Mail',
-    data: { category: 'heavy', ac: 16, strengthRequirement: 13 },
-    grants: [
-      { effects: [set('ac', 16), grant('state', 'armour.heavy')] },
-      {
-        // Only the penalty is conditional. Repeating the AC and state grant
-        // here would emit each of them twice for a low-Strength wearer.
-        effects: [add('speed', -10)],
-        when: { kind: 'expression', formula: f('attr.str.score < 13') },
-        detail: 'Strength below 13',
-      },
-    ],
-  },
-  {
-    key: 'shield',
-    type: 'item',
-    name: 'Shield',
-    grants: [{ effects: [add('ac', 2), grant('state', 'shield')] }],
-  },
-  {
-    key: 'ring-of-protection',
-    type: 'item',
-    name: 'Ring of Protection',
-    data: { rarity: 'rare', attunement: true },
-    grants: [
-      {
-        effects: [add('ac', 1, 'deflection'), add('save.all', 1, 'deflection')],
-        detail: 'attuned',
-      },
-    ],
-  },
-  {
-    key: 'longsword',
-    type: 'item',
-    name: 'Longsword',
-    data: { damage: '1d8', versatile: '1d10', properties: ['versatile'] },
-    grants: [{ effects: [grant('attack', 'longsword', { ability: 'str', damage: '1d8' })] }],
   },
 ];
 
@@ -272,7 +213,7 @@ export const dnd5e2014: SystemModule = {
     ...classes2014,
     ...subclasses2014,
     ...fightingStyles,
-    ...items,
+    ...equipment2014,
     ...spells,
     ...conditions,
   ],

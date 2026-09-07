@@ -190,6 +190,142 @@ describe('hand-verified characters', () => {
   });
 });
 
+describe('armour', () => {
+  const wearing = (key: string, dex: number) =>
+    sheet({
+      attributes: { dex },
+      classes: [{ key: 'fighter', level: 1 }],
+      inventory: [{ key, equipped: true }],
+    });
+
+  it('light armour adds all of Dexterity', () => {
+    // Studded leather 12 + DEX 4.
+    expect(wearing('studded-leather', 18).stats.ac?.value).toBe(16);
+  });
+
+  it('medium armour caps the Dexterity bonus at +2', () => {
+    // Half plate 15 + 2, not 15 + 4.
+    expect(wearing('half-plate', 18).stats.ac?.value).toBe(17);
+    // Below the cap it is the real modifier, not a flat +2.
+    expect(wearing('half-plate', 12).stats.ac?.value).toBe(16);
+  });
+
+  it('heavy armour ignores Dexterity entirely', () => {
+    expect(wearing('plate', 18).stats.ac?.value).toBe(18);
+    expect(wearing('plate', 6).stats.ac?.value).toBe(18);
+  });
+
+  it('heavy armour costs 10 feet of speed below its Strength requirement', () => {
+    const weak = sheet({
+      attributes: { str: 12, dex: 10 },
+      taken: ['human'],
+      classes: [{ key: 'fighter', level: 1 }],
+      inventory: [{ key: 'plate', equipped: true }],
+    });
+    const strong = sheet({
+      attributes: { str: 16, dex: 10 },
+      taken: ['human'],
+      classes: [{ key: 'fighter', level: 1 }],
+      inventory: [{ key: 'plate', equipped: true }],
+    });
+
+    // Human is +1 to everything, so 12 becomes 13 — still short of 15.
+    expect(weak.stats.speed?.value).toBe(20);
+    expect(strong.stats.speed?.value).toBe(30);
+  });
+
+  it('marks the armour that hampers stealth, and only that armour', () => {
+    expect(wearing('half-plate', 14).disadvantage['skill.stealth']).toBeDefined();
+    expect(wearing('breastplate', 14).disadvantage['skill.stealth']).toBeUndefined();
+  });
+
+  it('covers every SRD armour and weapon', () => {
+    const items = dnd5e2014.entities.filter((e) => e.type === 'item');
+    const armour = items.filter((e) => e.data?.slot === 'armour');
+    const weapons = items.filter((e) => e.data?.slot === 'weapon');
+
+    expect(armour).toHaveLength(12);
+    expect(weapons).toHaveLength(37);
+  });
+});
+
+describe('magic items', () => {
+  const fighter = {
+    attributes: { con: 14, dex: 10 },
+    classes: [{ key: 'fighter', level: 1 }],
+  };
+
+  it('Bracers of Defense apply only unarmoured and unshielded', () => {
+    const bare = sheet({ ...fighter, inventory: [{ key: 'bracers-of-defense', attuned: true }] });
+    expect(bare.stats.ac?.value).toBe(12);
+
+    const shielded = sheet({
+      ...fighter,
+      inventory: [
+        { key: 'bracers-of-defense', attuned: true },
+        { key: 'shield', equipped: true },
+      ],
+    });
+    // 10 + shield 2. The bracers switch themselves off rather than adding.
+    expect(shielded.stats.ac?.value).toBe(12);
+  });
+
+  it('two sources of deflection do not stack', () => {
+    const one = sheet({ ...fighter, inventory: [{ key: 'ring-of-protection', attuned: true }] });
+    const both = sheet({
+      ...fighter,
+      inventory: [
+        { key: 'ring-of-protection', attuned: true },
+        { key: 'cloak-of-protection', attuned: true },
+      ],
+    });
+
+    // Same bonus type, so the larger wins. Wearing the second changes nothing,
+    // which is the assertion that matters — the absolute values also depend on
+    // the character's own modifiers.
+    expect(both.stats.ac?.value).toBe(one.stats.ac?.value);
+    expect(both.stats['save.wis']?.value).toBe(one.stats['save.wis']?.value);
+    expect(one.stats.ac?.value).toBe(11);
+  });
+
+  it('an Amulet of Health raises a low Constitution and never lowers a high one', () => {
+    const raised = sheet({
+      attributes: { con: 8 },
+      classes: [{ key: 'fighter', level: 1 }],
+      inventory: [{ key: 'amulet-of-health', attuned: true }],
+    });
+    expect(raised.stats['attr.con.score']?.value).toBe(19);
+
+    const alreadyBetter = sheet({
+      attributes: { con: 20 },
+      classes: [{ key: 'fighter', level: 1 }],
+      inventory: [{ key: 'amulet-of-health', attuned: true }],
+    });
+    expect(alreadyBetter.stats['attr.con.score']?.value).toBe(20);
+  });
+});
+
+describe('weapons', () => {
+  it('finesse weapons record that either ability may be used', () => {
+    const s = sheet({
+      classes: [{ key: 'rogue', level: 1 }],
+      inventory: [
+        { key: 'rapier', equipped: true },
+        { key: 'greatsword', equipped: true },
+        { key: 'longbow', equipped: true },
+      ],
+    });
+    const attacks = Object.fromEntries(
+      s.grants.filter((g) => g.category === 'attack').map((g) => [g.target, g.data]),
+    );
+
+    expect(attacks.rapier?.ability).toBe('best');
+    expect(attacks.greatsword?.ability).toBe('str');
+    expect(attacks.longbow?.ability).toBe('dex');
+    expect(attacks.greatsword?.damage).toBe('2d6');
+  });
+});
+
 describe('ability score maxima', () => {
   it('caps an ordinary character at 20', () => {
     // Human adds +1 to everything, so 20 would otherwise become 21.
