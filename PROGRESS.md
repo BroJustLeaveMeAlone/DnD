@@ -699,9 +699,22 @@ out through `sh` and this machine's msys coreutils are broken. Rebuilding the ch
 commit needs no shell and gives exact control over dates and message encoding.
 
 **Verified:** the tree hash is byte-identical before and after, so history changed and content did
-not. Original timestamps preserved. CI green on the rewritten history. Backup refs
-(`backup-original-history`, `backup-before-identity-rewrite`) exist locally and were
-deliberately never pushed — pushing them would restore the old attribution.
+not. Original timestamps preserved. CI green on the rewritten history.
+
+**Backups retired — during Phase 11.** The rewrite left two local refs holding the original
+commits: `backup-original-history` and the tag `backup-before-identity-rewrite`. Neither was
+ever pushed, so the remote was always clean, but they were the last place in the repository
+where the old authorship survived, and any tool that walks all refs rather than just `main`
+still reported it. Removed with `git branch -D backup-original-history` and
+`git tag -d backup-before-identity-rewrite`.
+
+They were safe to delete because the rewrite is provably lossless: `main~5` and the backup tip
+resolve to the same tree hash (`c1a7ec49`) with an empty diff, so the backup held no content
+that `main` does not.
+
+**If the GitHub contributor list still shows the old identity, it is a cache.** That page is
+derived statistics, not a live read of the commit graph, and it lags a history rewrite by up to
+a day. `git log --all --format='%an'` is the authoritative check, and it now returns one name.
 
 ### Smaller fixes
 
